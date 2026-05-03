@@ -34,7 +34,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from the "Frontend" directory
-app.use(express.static(path.join(__dirname, "../Frontend")));
+app.use(express.static(path.join(__dirname, "Frontend")));
 
 // ============================
 // API Routes
@@ -53,11 +53,11 @@ app.get("/api/health", (req, res) => {
 // ============================
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../Frontend/index.html"));
+  res.sendFile(path.join(__dirname, "Frontend/index.html"));
 });
 
 app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "../Frontend/admin.html"));
+  res.sendFile(path.join(__dirname, "Frontend/admin.html"));
 });
 
 // ============================

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>AyuraNature | Admin Panel</title>
+  <!-- Tailwind + Font Awesome + Chart.js -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #f1efe7; }
+    .rich-editor { min-height: 280px; border: 1px solid #d6c8b8; border-radius: 1rem; padding: 1rem; background: white; line-height: 1.6; overflow-y: auto; }
+    .rich-editor:focus { outline: none; border-color: #2c5e2e; }
+    .rich-editor h2 { font-size: 1.6rem; font-weight: 700; margin: 0.75rem 0 0.4rem; font-family: inherit; }
+    .rich-editor h3 { font-size: 1.3rem; font-weight: 600; margin: 0.6rem 0 0.3rem; }
+    .rich-editor ul, .rich-editor ol { margin-left: 1.5rem; margin-bottom: 0.8rem; }
+    .rich-editor table { border-collapse: collapse; width: 100%; margin: 1rem 0; background: white; }
+    .rich-editor th, .rich-editor td { border: 1px solid #bbb; padding: 8px; text-align: left; }
+    .editor-toolbar button { background: #ede6dd; border: 1px solid #d1c0ab; padding: 6px 12px; border-radius: 40px; margin: 0 3px; font-size: 13px; transition: 0.2s; cursor: pointer; }
+    .editor-toolbar button:hover { background: #b88d5e; color: white; }
+    .admin-card { background: white; border-radius: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .admin-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    .post-list-item { transition: background 0.15s; border: 1px solid #f0e4d4; }
+    .post-list-item:hover { background: #fef6e8; border-color: #cb9e6b; }
+    @media (max-width: 640px) {
+      .admin-card { border-radius: 1rem; padding: 1rem; }
+      .btn-primary, .btn-secondary, .btn-outline { width: 100%; text-align: center; }
+      .editor-toolbar button { padding: 4px 8px; font-size: 12px; }
+    }
+    .btn-primary { background: #2c5e2e; color: white; border-radius: 2rem; padding: 0.5rem 1.2rem; font-weight: 500; }
+    .btn-primary:hover { background: #1f4521; }
+    .btn-secondary { background: #6f4e2e; color: white; border-radius: 2rem; padding: 0.5rem 1.2rem; }
+    .btn-outline { border: 1px solid #c7b59e; border-radius: 2rem; padding: 0.4rem 1rem; background: white; }
+    .modal-overlay { background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); }
+    .chart-preview { background: #faf6f0; border-radius: 1rem; padding: 0.8rem; margin: 0.5rem 0; }
+  </style>
+</head>
+<body class="antialiased">
+
+<!-- MAIN ADMIN CONTAINER (full page) -->
+<div id="adminApp" class="min-h-screen w-full flex flex-col">
+
+  <!-- LOGIN SECTION (visible until login) -->
+  <div id="loginSection" class="flex-1 flex items-center justify-center p-6">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 text-center">
+      <div class="flex justify-center mb-4">
+        <img src="./publc/Ayuralogo.png" alt="AyuraNature Logo" class="h-16 w-16 object-contain rounded-full bg-amber-50 p-2 border-2 border-emerald-100">
+      </div>
+      <h2 class="font-bold text-3xl text-stone-800">AyuraNature Admin</h2>
+      <p class="text-stone-500 mb-6">Secure Content Management System</p>
+      <div class="space-y-4">
+        <input type="password" id="adminPasswordInput" placeholder="Enter admin password" class="w-full border border-stone-300 rounded-full px-5 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500">
+        <button id="loginBtn" class="w-full bg-stone-800 hover:bg-stone-900 text-white font-semibold py-2.5 rounded-full transition"><i class="fas fa-lock mr-2"></i> Login</button>
+        <p class="text-xs text-stone-400 mt-3">Demo password: <strong class="text-amber-700">ayura2026</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD (hidden until login) -->
+  <div id="dashboardSection" class="hidden flex-1 p-5 md:p-8 bg-[#f8f5ef]">
+    <div class="max-w-7xl mx-auto">
+      <!-- Header -->
+      <div class="flex flex-wrap justify-between items-center mb-8 gap-4">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-crown text-3xl text-amber-700"></i>
+          <h1 class="font-bold text-2xl md:text-3xl text-stone-800">Admin Dashboard — Blog Manager</h1>
+        </div>
+        <button id="logoutBtn" class="bg-white border border-stone-300 px-4 py-2 rounded-full text-sm shadow-sm hover:bg-stone-100"><i class="fas fa-sign-out-alt mr-1"></i> Logout</button>
+      </div>
+
+      <!-- Quick actions + stats -->
+      <div class="grid md:grid-cols-3 gap-5 mb-8">
+        <div class="admin-card p-5 flex justify-between items-center"><div><p class="text-stone-500 text-sm">Total Blogs</p><p id="totalPostsCount" class="text-3xl font-bold text-stone-800">0</p></div><i class="fas fa-newspaper text-4xl text-amber-600/60"></i></div>
+        <div class="admin-card p-5 flex justify-between items-center"><div><p class="text-stone-500 text-sm">Featured Stories</p><p id="featuredCount" class="text-3xl font-bold text-stone-800">0</p></div><i class="fas fa-star text-4xl text-amber-600/60"></i></div>
+        <button id="newPostMainBtn" class="admin-card p-5 bg-emerald-50 hover:bg-emerald-100 transition flex justify-between items-center"><div class="text-left"><p class="font-semibold text-emerald-800">Create New Blog</p><p class="text-sm text-emerald-600">Rich editor + graphs</p></div><i class="fas fa-plus-circle text-3xl text-emerald-700"></i></button>
+      </div>
+
+      <!-- Blog posts list (CRUD) -->
+      <div class="admin-card p-5 mb-8">
+        <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
+          <h2 class="font-bold text-xl text-stone-800"><i class="fas fa-list-ul mr-2 text-amber-600"></i> All Blog Posts</h2>
+          <div class="flex gap-2">
+            <input type="text" id="adminSearchInput" placeholder="Filter by title..." class="border rounded-full px-4 py-1.5 text-sm w-48">
+            <button id="refreshPostListBtn" class="bg-stone-100 px-3 rounded-full"><i class="fas fa-sync-alt"></i></button>
+          </div>
+        </div>
+        <div id="postsListContainer" class="max-h-[450px] overflow-y-auto space-y-2 pr-1"></div>
+        <div id="noPostsMsg" class="text-center py-8 text-stone-400 hidden">No blog posts yet. Click "Create New Blog" to start.</div>
+      </div>
+
+      <!-- Global Settings: Ad controls (optional for preview) -->
+      <div class="admin-card p-5">
+        <h3 class="font-bold text-lg mb-3"><i class="fas fa-sliders-h mr-2 text-amber-600"></i> Display Settings</h3>
+        <div class="flex flex-wrap gap-6 items-center">
+          <label class="inline-flex items-center gap-2"><input type="checkbox" id="enableAdsToggle"> <span>Enable Advertisement placeholders (demo)</span></label>
+          <label class="inline-flex items-center gap-2"><input type="checkbox" id="showInlineAdsToggle"> <span>Show inline ads in blog grid</span></label>
+          <div><span class="text-sm">Ad frequency:</span> <input type="number" id="adFreqInput" min="2" max="6" value="3" class="border rounded w-16 px-2 py-1 mx-2"></div>
+          <button id="saveSettingsBtn" class="btn-outline text-sm">Save Settings</button>
+        </div>
+        <p class="text-xs text-stone-400 mt-4"><i class="fas fa-info-circle"></i> These settings affect the public blog preview; stored locally.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT / CREATE POST (Rich Editor + Table + Graph) -->
+<div id="postModal" class="fixed inset-0 z-50 hidden modal-overlay flex justify-center items-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+      <h3 id="modalTitle" class="font-serif text-2xl font-bold text-stone-800"><i class="fas fa-feather-alt mr-2 text-amber-600"></i> Edit / Create Blog</h3>
+      <button id="closeModalBtn" class="text-3xl leading-none text-stone-500 hover:text-stone-800">&times;</button>
+    </div>
+    <div class="p-6">
+      <form id="blogPostForm" class="space-y-5">
+        <input type="hidden" id="editPostId">
+        <div><label class="font-semibold block mb-1">Title *</label><input type="text" id="postTitle" class="w-full border border-stone-300 rounded-xl p-2.5" required></div>
+        <div><label class="font-semibold block mb-1">Short Excerpt (max 160 chars)</label><textarea id="postExcerpt" rows="2" class="w-full border border-stone-300 rounded-xl p-2.5" required></textarea></div>
+        
+        <!-- Rich Editor Toolbar -->
+        <div><label class="font-semibold block mb-1">Full Content (Rich Text)</label>
+          <div class="editor-toolbar flex flex-wrap gap-1 mb-2">
+            <button type="button" data-cmd="bold" title="Bold"><i class="fas fa-bold"></i></button>
+            <button type="button" data-cmd="italic" title="Italic"><i class="fas fa-italic"></i></button>
+            <button type="button" data-cmd="underline" title="Underline"><i class="fas fa-underline"></i></button>
+            <button type="button" data-cmd="formatBlock" data-value="h2"><i class="fas fa-heading"></i> H2</button>
+            <button type="button" data-cmd="formatBlock" data-value="h3"><i class="fas fa-heading"></i> H3</button>
+            <button type="button" data-cmd="insertUnorderedList"><i class="fas fa-list-ul"></i> Bullets</button>
+            <button type="button" data-cmd="insertOrderedList"><i class="fas fa-list-ol"></i> Numbered</button>
+            <button type="button" id="insertTableBtn"><i class="fas fa-table"></i> Insert Table</button>
+            <button type="button" id="insertGraphBtn"><i class="fas fa-chart-bar"></i> Insert Chart</button>
+            <button type="button" id="clearFormatBtn"><i class="fas fa-eraser"></i> Clear</button>
+          </div>
+          <div id="richEditor" class="rich-editor" contenteditable="true"></div>
+          <textarea id="postContentHidden" class="hidden"></textarea>
+        </div>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+          <div><label class="font-semibold">Category</label><input type="text" id="postCategory" placeholder="e.g., Ayurveda & Natural Remedies" class="w-full border rounded-xl p-2.5"></div>
+          <div><label class="font-semibold">Tags (comma separated)</label><input type="text" id="postTags" placeholder="Yoga, Herbs, Meditation" class="w-full border rounded-xl p-2.5"></div>
+          <div><label class="font-semibold">Featured Image (Upload)</label><input type="file" id="postImageFile" class="w-full border rounded-xl p-2.5"></div>
+          <div><label class="font-semibold">Featured Image URL (Optional fallback)</label><input type="url" id="postImage" placeholder="https://..." class="w-full border rounded-xl p-2.5"></div>
+          <div><label class="font-semibold">Publish Date</label><input type="date" id="postDate" class="w-full border rounded-xl p-2.5"></div>
+        </div>
+        <div class="flex gap-4 items-center"><label class="flex items-center gap-2"><input type="checkbox" id="postFeatured"> <span>⭐ Feature this post (show on homepage)</span></label></div>
+        <div class="flex justify-end gap-3 pt-4 border-t">
+          <button type="button" id="cancelModalBtn" class="border border-stone-300 px-5 py-2 rounded-full">Cancel</button>
+          <button type="submit" class="btn-primary px-6 py-2"><i class="fas fa-save mr-1"></i> Save Post</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- API ENDPOINT ----------
+  const API_BASE_URL = window.location.protocol === 'file:'
+    ? 'https://blogserver-backhend.onrender.com/api/posts'
+    : '/api/posts';  const STORAGE_ADMIN_SETTINGS = 'ayuranature_admin_settings';
+  let blogPosts = [];
+  let adminSettings = { adsEnabled: true, showInlineAds: true, adFrequency: 3 };
+  let currentEditorDiv = null;
+
+  async function loadData() {
+    try {
+      const response = await fetch(API_BASE_URL);
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      blogPosts = await response.json();
+      renderPostsList("");
+    } catch (err) {
+      console.error(err);
+      alert("Error loading posts from server.");
+    }
+    
+    const settingsStored = localStorage.getItem(STORAGE_ADMIN_SETTINGS);
+    if (settingsStored) adminSettings = JSON.parse(settingsStored);
+    else saveSettings();
+  }
+  
+  function saveSettings() { localStorage.setItem(STORAGE_ADMIN_SETTINGS, JSON.stringify(adminSettings)); }
+
+  // Helper: Update stats & render post list
+  function updateDashboardStats() {
+    document.getElementById("totalPostsCount").innerText = blogPosts.length;
+    document.getElementById("featuredCount").innerText = blogPosts.filter(p => p.featured).length;
+  }
+
+  function renderPostsList(filter = "") {
+    const container = document.getElementById("postsListContainer");
+    const noMsg = document.getElementById("noPostsMsg");
+    if (!container) return;
+    let filtered = blogPosts;
+    if (filter.trim()) filtered = blogPosts.filter(p => p.title.toLowerCase().includes(filter.toLowerCase()));
+    if (filtered.length === 0) { container.innerHTML = ""; noMsg.classList.remove("hidden"); updateDashboardStats(); return; }
+    noMsg.classList.add("hidden");
+    container.innerHTML = filtered.map(post => `
+      <div class="post-list-item bg-white rounded-xl p-4 border border-stone-200 flex flex-wrap justify-between items-start gap-3">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="font-bold text-stone-800">${escapeHtml(post.title.substring(0, 70))}</h3>
+            ${post.featured ? '<span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full">Featured</span>' : ''}
+            <span class="text-xs text-stone-400">${post.date ? post.date.split('T')[0] : 'no date'}</span>
+          </div>
+          <p class="text-sm text-stone-500 line-clamp-1">${escapeHtml(post.excerpt.substring(0, 100))}</p>
+          <div class="text-xs text-stone-400 mt-1">${post.category || 'Uncategorized'} • ${post.tags?.join(', ') || ''}</div>
+        </div>
+        <div class="flex gap-2">
+          <button class="editPostBtn text-blue-600 hover:text-blue-800 p-1" data-id="${post._id}"><i class="fas fa-edit"></i> Edit</button>
+          <button class="deletePostBtn text-red-600 hover:text-red-800 p-1" data-id="${post._id}"><i class="fas fa-trash-alt"></i> Delete</button>
+        </div>
+      </div>
+    `).join('');
+    // attach edit/delete events
+    document.querySelectorAll(".editPostBtn").forEach(btn => btn.addEventListener("click", (e) => { const id = btn.getAttribute("data-id"); openPostModal(id); }));
+    document.querySelectorAll(".deletePostBtn").forEach(btn => btn.addEventListener("click", async (e) => { 
+      if(confirm("Permanently delete this blog?")) { 
+        const id = btn.getAttribute("data-id"); 
+        try {
+          const res = await fetch(`${API_BASE_URL}/delete/${id}`, { method: 'DELETE' });
+          if(res.ok) {
+            blogPosts = blogPosts.filter(p => p._id !== id);
+            renderPostsList(document.getElementById("adminSearchInput").value);
+            updateDashboardStats();
+          } else {
+            alert("Failed to delete post.");
+          }
+        } catch(err) {
+          console.error(err);
+          alert("Error deleting post.");
+        }
+      } 
+    }));
+    updateDashboardStats();
+  }
+
+  function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+  // **************** RICH EDITOR LOGIC ****************
+  function initRichEditor(containerId) {
+    currentEditorDiv = document.getElementById(containerId);
+    if(!currentEditorDiv) return;
+    // Toolbar commands
+    const btns = document.querySelectorAll(".editor-toolbar button[data-cmd]");
+    btns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const cmd = btn.getAttribute("data-cmd");
+        const val = btn.getAttribute("data-value");
+        if(cmd === "formatBlock") document.execCommand("formatBlock", false, val);
+        else document.execCommand(cmd, false, null);
+        currentEditorDiv.focus();
+      });
+    });
+    document.getElementById("insertTableBtn")?.addEventListener("click", () => {
+      const rows = prompt("Number of rows?", "3");
+      const cols = prompt("Number of columns?", "2");
+      if(rows && cols) {
+        let table = '<table border="1" style="border-collapse:collapse; width:100%">';
+        for(let i=0; i<parseInt(rows); i++) {
+          table += '<tr>';
+          for(let j=0; j<parseInt(cols); j++) table += `<td>${i===0 && j===0 ? 'Header' : 'Data'}</td>`;
+          table += '</tr>';
+        }
+        table += '</table><br>';
+        document.execCommand("insertHTML", false, table);
+      }
+    });
+    document.getElementById("insertGraphBtn")?.addEventListener("click", () => {
+      let labels = prompt("Chart labels (comma):", "Jan,Feb,Mar,Apr");
+      let values = prompt("Values (comma):", "12,19,8,15");
+      if(labels && values) {
+        const lblArr = labels.split(',').map(s=>s.trim());
+        const valArr = values.split(',').map(v=>parseFloat(v.trim()));
+        const uid = 'chart_' + Date.now() + Math.floor(Math.random()*1000);
+        const chartHtml = `<div class="chart-preview"><canvas id="${uid}" style="max-height:220px;"></canvas><div class="text-xs text-center mt-1">📊 Wellness Analytics</div></div><script>setTimeout(()=>{ const ctx = document.getElementById('${uid}').getContext('2d'); new Chart(ctx, { type: 'bar', data: { labels: ${JSON.stringify(lblArr)}, datasets: [{ label: 'Holistic Impact', data: ${JSON.stringify(valArr)}, backgroundColor: '#cb9e6b' }] } }); }, 80);<\/script>`;
+        document.execCommand("insertHTML", false, chartHtml);
+      } else alert("Chart requires both labels and values");
+    });
+    document.getElementById("clearFormatBtn")?.addEventListener("click", () => {
+      document.execCommand("removeFormat", false, null);
+      currentEditorDiv.focus();
+    });
+  }
+  function getEditorContent() { return currentEditorDiv ? currentEditorDiv.innerHTML : ''; }
+  function setEditorContent(html) { if(currentEditorDiv) currentEditorDiv.innerHTML = html || '<p>Start writing your holistic article...</p>'; }
+  
+  // **************** CRUD MODAL ****************
+  function openPostModal(postId = null) {
+    const modal = document.getElementById("postModal");
+    document.getElementById("editPostId").value = "";
+    document.getElementById("postTitle").value = "";
+    document.getElementById("postExcerpt").value = "";
+    setEditorContent("<p>Write your content here. Use toolbar to add headings, tables, or charts.</p>");
+    document.getElementById("postCategory").value = "Ayurveda & Natural Remedies";
+    document.getElementById("postTags").value = "Wellness, Natural";
+    document.getElementById("postImage").value = "";
+    document.getElementById("postImageFile").value = "";
+    document.getElementById("postFeatured").checked = false;
+    document.getElementById("postDate").value = new Date().toISOString().slice(0,10);
+    document.getElementById("modalTitle").innerHTML = '<i class="fas fa-plus-circle mr-2"></i> Create New Blog';
+    if(postId) {
+      const post = blogPosts.find(p => p._id === postId);
+      if(post) {
+        document.getElementById("editPostId").value = post._id;
+        document.getElementById("postTitle").value = post.title;
+        document.getElementById("postExcerpt").value = post.excerpt;
+        setEditorContent(post.fullContent || "<p>Edit your content...</p>");
+        document.getElementById("postCategory").value = post.category || "";
+        document.getElementById("postTags").value = (post.tags || []).join(", ");
+        document.getElementById("postImage").value = post.image?.url || "";
+        document.getElementById("postFeatured").checked = post.featured || false;
+        document.getElementById("postDate").value = post.date ? post.date.split('T')[0] : new Date().toISOString().slice(0,10);
+        document.getElementById("modalTitle").innerHTML = '<i class="fas fa-edit mr-2"></i> Edit Blog Post';
+      }
+    }
+    // init rich editor instance after dom ready
+    initRichEditor("richEditor");
+    modal.classList.remove("hidden");
+  }
+  function closeModal() { document.getElementById("postModal").classList.add("hidden"); }
+  
+  async function savePostFromForm() {
+    const id = document.getElementById("editPostId").value;
+    const title = document.getElementById("postTitle").value.trim();
+    const excerpt = document.getElementById("postExcerpt").value.trim();
+    const fullContent = getEditorContent();
+    const category = document.getElementById("postCategory").value.trim();
+    const tags = document.getElementById("postTags").value.split(",").map(s=>s.trim()).filter(Boolean);
+    const featured = document.getElementById("postFeatured").checked;
+    const date = document.getElementById("postDate").value;
+    const imageUrl = document.getElementById("postImage").value.trim();
+    const imageFile = document.getElementById("postImageFile").files[0];
+
+    if(!title || !excerpt) return alert("Title and Excerpt are required");
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('excerpt', excerpt);
+    formData.append('fullContent', fullContent);
+    formData.append('category', category);
+    formData.append('tags', JSON.stringify(tags));
+    formData.append('featured', featured);
+    formData.append('date', date);
+    if(imageFile) formData.append('image', imageFile);
+    if(imageUrl) formData.append('imageUrl', imageUrl);
+
+    try {
+      let url = `${API_BASE_URL}/add`;
+      let method = 'POST';
+      if(id) {
+        url = `${API_BASE_URL}/update/${id}`;
+        method = 'PUT';
+      }
+      
+      const res = await fetch(url, {
+        method: method,
+        body: formData
+      });
+
+      if(res.ok) {
+        const data = await res.json();
+        alert(data.message);
+        closeModal();
+        loadData();
+      } else {
+        const error = await res.json();
+        alert("Error: " + error.message);
+      }
+    } catch(err) {
+      console.error(err);
+      alert("Error saving post.");
+    }
+  }
+
+  // ************ LOGIN / LOGOUT ************
+  let isLoggedIn = false;
+  function showLogin() { document.getElementById("loginSection").classList.remove("hidden"); document.getElementById("dashboardSection").classList.add("hidden"); isLoggedIn = false; }
+  function showDashboard() { document.getElementById("loginSection").classList.add("hidden"); document.getElementById("dashboardSection").classList.remove("hidden"); isLoggedIn = true; loadData(); updateDashboardStats(); loadSettingsToUI(); }
+  function loadSettingsToUI() {
+    document.getElementById("enableAdsToggle").checked = adminSettings.adsEnabled;
+    document.getElementById("showInlineAdsToggle").checked = adminSettings.showInlineAds;
+    document.getElementById("adFreqInput").value = adminSettings.adFrequency;
+  }
+  function saveAdminSettings() {
+    adminSettings.adsEnabled = document.getElementById("enableAdsToggle").checked;
+    adminSettings.showInlineAds = document.getElementById("showInlineAdsToggle").checked;
+    adminSettings.adFrequency = parseInt(document.getElementById("adFreqInput").value) || 3;
+    saveSettings();
+    alert("Settings saved locally (affects public preview).");
+  }
+
+  // ************ EVENT LISTENERS ************
+  document.getElementById("loginBtn")?.addEventListener("click", () => {
+    const pwd = document.getElementById("adminPasswordInput").value;
+    if(pwd === "ayura2026") showDashboard();
+    else alert("Incorrect password. Hint: ayura2026");
+  });
+  document.getElementById("logoutBtn")?.addEventListener("click", () => { showLogin(); document.getElementById("adminPasswordInput").value = ""; });
+  document.getElementById("newPostMainBtn")?.addEventListener("click", () => openPostModal(null));
+  document.getElementById("refreshPostListBtn")?.addEventListener("click", () => loadData());
+  document.getElementById("adminSearchInput")?.addEventListener("input", (e) => renderPostsList(e.target.value));
+  document.getElementById("saveSettingsBtn")?.addEventListener("click", saveAdminSettings);
+  document.getElementById("closeModalBtn")?.addEventListener("click", closeModal);
+  document.getElementById("cancelModalBtn")?.addEventListener("click", closeModal);
+  document.getElementById("blogPostForm")?.addEventListener("submit", (e) => { e.preventDefault(); savePostFromForm(); });
+  // close modal on overlay click? optional
+  window.addEventListener("click", (e) => { if(e.target === document.getElementById("postModal")) closeModal(); });
+  
+  // initial load
+  showLogin(); // start with login screen
+  // populate settings ui later when dashboard shown
+</script>
+</body>
+</html>

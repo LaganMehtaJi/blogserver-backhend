@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+  <title>AyuraNature | Holistic Wellness & Natural Healing</title>
+  <!-- Google Fonts + Tailwind + Font Awesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #fefaf5; scroll-behavior: smooth; }
+    .font-serif { font-family: 'Playfair Display', serif; }
+    
+    /* animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.7s ease forwards; }
+
+    /* custom card & scroll styles */
+    .premium-card { transition: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1); }
+    .category-card-premium { transition: all 0.3s ease; background: white; border-radius: 2rem; padding: 1.5rem 1rem; text-align: center; cursor: pointer; border: 1px solid rgba(203,158,107,0.2); box-shadow: 0 8px 20px rgba(0,0,0,0.02); }
+    .category-card-premium:hover { transform: translateY(-8px); background: linear-gradient(145deg, #ffffff, #fef7e8); border-color: #cb9e6b; }
+    .horizontal-scroll-premium { display: flex; overflow-x: auto; scroll-behavior: smooth; gap: 1.8rem; padding-bottom: 1.2rem; scrollbar-width: thin; }
+    .horizontal-scroll-premium::-webkit-scrollbar { height: 6px; }
+    .featured-premium-card { flex: 0 0 340px; background: white; border-radius: 1.8rem; overflow: hidden; transition: all 0.4s; box-shadow: 0 15px 30px -12px rgba(0,0,0,0.08); cursor: pointer; position: relative; border: 1px solid #f3e7db; }
+    .featured-premium-card:hover { transform: translateY(-8px); border-color: #cb9e6b; }
+    .slider-premium { position: relative; overflow: hidden; border-radius: 2rem; touch-action: pan-y pinch-zoom; }
+    .slider-track-premium { display: flex; transition: transform 0.4s cubic-bezier(0.2, 0.85, 0.4, 1); gap: 1.8rem; }
+    .slider-card-premium { flex: 0 0 calc(33.333% - 1.2rem); background: white; border-radius: 1.5rem; overflow: hidden; transition: all 0.35s ease; border: 1px solid #f0e4d4; cursor: pointer; position: relative; }
+    .slider-card-premium:hover { transform: translateY(-6px); border-color: #cb9e6b; }
+    @media (max-width: 768px) { .slider-card-premium { flex: 0 0 calc(100% - 0.5rem); } }
+    @media (min-width: 769px) and (max-width: 1024px) { .slider-card-premium { flex: 0 0 calc(50% - 0.9rem); } }
+    .slider-btn-premium { background: white; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 18px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s; }
+    .slider-btn-premium:hover { background: #2c5e2e; color: white; transform: scale(1.02); }
+    .hero-banner-premium {
+      width: 100%;
+      overflow: hidden;
+      background: #fff;
+    }
+    .hero-banner-premium img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: contain;
+    }
+    @media (max-width: 768px) { 
+      .hero-banner-premium { 
+        min-height: 0;
+      } 
+    }
+    .search-input-premium { background: rgba(255,250,240,0.95); border: 1px solid #e7d9cc; border-radius: 40px; padding: 0.5rem 1rem 0.5rem 2.5rem; transition: all 0.3s ease; width: 220px; }
+    .search-input-premium:focus { outline: none; border-color: #2c5e2e; width: 280px; background: white; box-shadow: 0 0 0 4px rgba(44, 94, 46, 0.1); }
+    .sticky-nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); background: rgba(255,255,245,0.96); box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+    .topic-chip-premium { transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); cursor: pointer; }
+    .topic-chip-premium:hover { transform: scale(1.05); background: #6f4e2e !important; color: white !important; }
+    .topic-chip-premium.active-topic { background: #2c5e2e !important; color: white !important; border-color: #2c5e2e !important; }
+    .ad-banner-placeholder { background: linear-gradient(135deg, #f7f3eb, #e9e0d4); border: 1px dashed #b98f64; border-radius: 1.5rem; text-align: center; padding: 1rem; margin: 1.5rem 0; }
+    .ad-card { background: linear-gradient(145deg, #fef7e8, #f9efdf); border: 1px solid #e2cfb5; border-radius: 1.5rem; padding: 1.5rem; text-align: center; transition: all 0.2s; }
+    .ad-card:hover { transform: scale(1.01); box-shadow: 0 8px 20px rgba(0,0,0,0.05); }
+    .grid-all-posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+    @media (min-width: 640px) { .grid-all-posts { gap: 2rem; } }
+    .post-card-grid { background: white; border-radius: 1.5rem; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 1px solid #f0e4d4; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+    .post-card-grid:hover { transform: translateY(-6px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border-color: #cb9e6b; }
+    
+    /* Blog Content Styling */
+    .blog-content-rich h2 { font-size: 1.8rem; font-weight: 700; color: #1c1917; margin: 1.5rem 0 0.75rem; font-family: 'Playfair Display', serif; }
+    .blog-content-rich h3 { font-size: 1.4rem; font-weight: 600; color: #2c5e2e; margin: 1.25rem 0 0.5rem; }
+    .blog-content-rich p { margin-bottom: 1.25rem; line-height: 1.8; color: #444; }
+    .blog-content-rich ul, .blog-content-rich ol { margin-left: 1.5rem; margin-bottom: 1.25rem; list-style-type: disc; }
+    .blog-content-rich li { margin-bottom: 0.5rem; color: #444; }
+    .blog-content-rich img { border-radius: 1rem; margin: 1.5rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+    .loading-spinner { border: 3px solid #f0e0d0; border-top: 3px solid #2c5e2e; border-radius: 50%; width: 48px; height: 48px; animation: spin 0.8s linear infinite; margin: 2rem auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast-notify { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2c5e2e; color: white; padding: 12px 24px; border-radius: 50px; z-index: 200; box-shadow: 0 10px 20px rgba(0,0,0,0.2); animation: fadeUp 0.3s ease; }
+    .new-badge { position: absolute; top: 12px; right: 12px; background: #e67e22; color: white; font-size: 0.7rem; font-weight: bold; padding: 0.25rem 0.75rem; border-radius: 30px; z-index: 5; backdrop-filter: blur(2px); }
+    .footer-link { transition: 0.2s; }
+    .footer-link:hover { color: #cb9e6b; transform: translateX(3px); display: inline-block; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- RESPONSIVE NAVBAR (mobile hamburger + desktop full menu) -->
+  <header class="sticky-nav border-b border-amber-100">
+    <div class="container mx-auto px-5 lg:px-8 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <img src="./publc/Ayuralogo.png" alt="AyuraNature Logo" class="h-10 w-10 object-contain rounded-full bg-amber-50 p-1">
+        <span class="font-serif text-xl font-semibold text-stone-800 hidden sm:inline">AyuraNature</span>
+      </div>
+      
+      <!-- Desktop Navigation (visible md+) -->
+      <div class="hidden md:flex items-center gap-6">
+        <nav class="flex gap-6 text-stone-700 font-medium">
+          <a href="#" id="desktopHomeLink" class="hover:text-emerald-700 transition">Home</a>
+          <a href="#" id="desktopHubLink" class="hover:text-emerald-700 transition">Wellness Hub</a>
+          <a href="#" id="desktopContactLink" class="hover:text-emerald-700 transition">Contact</a>
+        </nav>
+        <div class="relative">
+          <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm"></i>
+          <input type="text" id="globalSearchInput" placeholder="Search articles..." class="search-input-premium pl-9 pr-4 py-2 text-sm">
+        </div>
+        <button id="refreshBtn" class="bg-amber-100 hover:bg-amber-200 text-amber-800 p-2 rounded-full transition"><i class="fas fa-sync-alt"></i></button>
+      </div>
+
+      <!-- Mobile controls (hamburger + search toggle + refresh) -->
+      <div class="flex md:hidden items-center gap-3">
+        <button id="mobileSearchToggle" class="text-stone-600 text-xl"><i class="fas fa-search"></i></button>
+        <button id="mobileRefreshBtn" class="text-stone-600 bg-amber-100 p-2 rounded-full"><i class="fas fa-sync-alt"></i></button>
+        <button id="mobileMenuBtn" class="text-stone-700 text-2xl"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+
+    <!-- Mobile search bar (hidden by default) -->
+    <div id="mobileSearchContainer" class="hidden md:hidden px-5 pb-3">
+      <input type="text" id="mobileSearchInput" placeholder="Search articles..." class="w-full p-2 rounded-full bg-amber-50 border border-amber-200 focus:outline-none">
+    </div>
+
+    <!-- Mobile dropdown menu -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white/95 backdrop-blur-md border-t border-amber-100 py-4 px-5 flex flex-col space-y-3">
+      <a href="#" id="mobileHomeLink" class="text-stone-700 font-medium py-1">Home</a>
+      <a href="#" id="mobileHubLink" class="text-stone-700 font-medium py-1">Wellness Hub</a>
+      <a href="#" id="mobileContactLink" class="text-stone-700 font-medium py-1">Contact & About</a>
+    </div>
+  </header>
+
+  <main id="mainHomeView">
+    <section id="home" class="hero-banner-premium w-full">
+      <img src="./publc/Hero.jpeg" alt="AyuraNature Wellness Banner">
+    </section>
+
+    <!-- Categories section (dynamic from API) -->
+    <section id="categories-section" class="py-20 bg-white fade-up">
+      <div class="container mx-auto px-5 lg:px-8 text-center">
+        <h2 class="font-serif text-4xl font-bold text-stone-800">Explore by Category</h2>
+        <div class="w-20 h-1 bg-amber-500 mx-auto mt-3 rounded-full"></div>
+        <div id="dynamicCategoriesContainer" class="category-grid-center grid grid-cols-2 md:grid-cols-4 gap-6 mt-12"></div>
+      </div>
+    </section>
+
+    <!-- Filters & popular topics -->
+    <div id="filter-section" class="container mx-auto px-5 lg:px-8 mb-4">
+      <div class="flex flex-wrap justify-between items-center gap-4 border-b border-amber-100 pb-5">
+        <div id="popularTopicsContainer" class="flex flex-wrap gap-2"></div>
+        <button id="resetFiltersBtn" class="text-sm bg-white border border-stone-300 px-5 py-2 rounded-full hover:bg-stone-100"><i class="fas fa-undo-alt mr-1"></i>Reset filters</button>
+      </div>
+    </div>
+
+    <!-- Featured horizontal scroll -->
+    <section id="featured-section" class="py-14 bg-amber-50/20 fade-up">
+      <div class="container mx-auto px-5 lg:px-8">
+        <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-800 border-l-8 border-emerald-600 pl-4 mb-6">🌿 Featured Healing Stories</h2>
+        <div id="horizontalFeaturedContainer" class="horizontal-scroll-premium"></div>
+        <div id="noFeaturedMsg" class="hidden text-center py-10 text-stone-400">✨ No featured stories match</div>
+      </div>
+    </section>
+
+    <!-- Freshly added slider -->
+    <section id="recent-section" class="py-20 bg-white fade-up">
+      <div class="container mx-auto px-5 lg:px-8">
+        <div class="flex justify-between items-center flex-wrap mb-6">
+          <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-800 border-l-8 border-amber-500 pl-4">Freshly Added & Natural Insights</h2>
+          <div class="flex gap-3">
+            <button id="prevSlideBtn" class="slider-btn-premium"><i class="fas fa-chevron-left"></i></button>
+            <button id="nextSlideBtn" class="slider-btn-premium"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="slider-premium" id="swipeSliderContainer">
+          <div id="recentSliderTrack" class="slider-track-premium"></div>
+        </div>
+        <div id="sliderEmptyMsg" class="hidden text-center py-10 text-stone-400">✨ No matching posts</div>
+      </div>
+    </section>
+
+    <!-- All posts grid with ads every 3 posts + banner ad -->
+    <section id="all-posts-section" class="py-16 bg-amber-50/10 fade-up">
+      <div class="container mx-auto px-5 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-3">
+          <h2 class="font-serif text-3xl md:text-4xl font-bold text-stone-800 border-l-8 border-amber-600 pl-4">📖 All Natural Wisdom</h2>
+          <span class="text-xs bg-white/70 px-4 py-1 rounded-full"><i class="fas fa-ad"></i> Ads every 3 posts</span>
+        </div>
+        <!-- Leaderboard Banner Ad -->
+        <div class="ad-banner-placeholder w-full py-4 my-2 rounded-2xl bg-gradient-to-r from-amber-100 to-stone-100 text-center shadow-sm">
+          <i class="fas fa-chart-line text-amber-700 text-xl mr-2"></i> <span class="font-semibold">Advertisement</span> — Discover holistic wellness & natural remedies
+          <div class="text-xs text-stone-500 mt-1">Your brand here | Contact us for collaboration</div>
+        </div>
+        <div id="allPostsGridContainer" class="grid-all-posts"></div>
+        <div id="noPostsGridMsg" class="hidden text-center py-12 text-stone-400 text-lg">No articles match your filters 🌱</div>
+      </div>
+    </section>
+
+    <!-- About & Contact section -->
+    <section id="about-contact" class="py-20 bg-amber-50/30 fade-up">
+      <div class="container mx-auto px-5 lg:px-8 grid lg:grid-cols-2 gap-12">
+        <div class="p-8 rounded-3xl bg-white/80 shadow-xl backdrop-blur-sm"><i class="fas fa-seedling text-4xl text-emerald-700 mb-4"></i><h3 class="font-serif text-3xl font-semibold">About AyuraNature</h3><p class="text-stone-600 mt-4">Dedicated to sharing ancient wisdom, natural remedies, and holistic living. Our mission is to help you find balance through nature.</p></div>
+        <div class="p-8 rounded-3xl bg-white/80 shadow-xl backdrop-blur-sm"><i class="fas fa-envelope-open-text text-3xl text-emerald-700 mb-3"></i><h3 class="font-serif text-2xl font-semibold">Get in touch</h3><form onsubmit="alert('✨ Thanks! We’ll connect soon.'); return false;"><input type="text" placeholder="Name" class="w-full p-3 border rounded-xl mb-3"><input type="email" placeholder="Email" class="w-full p-3 border rounded-xl mb-3"><textarea rows="2" placeholder="Message" class="w-full p-3 border rounded-xl mb-3"></textarea><button class="bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2 rounded-full w-full">Send</button></form></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Detail view (single article) -->
+  <div id="detailView" class="hidden min-h-screen bg-[#fefaf5]">
+    <div class="container mx-auto px-5 lg:px-8 py-6">
+      <button id="backToHomeBtn" class="bg-white px-5 py-2 rounded-full shadow-md mb-6"><i class="fas fa-arrow-left mr-2"></i>Back to Home</button>
+      <article class="bg-white rounded-3xl shadow-xl overflow-hidden"><img id="detailImage" class="w-full h-64 md:h-96 object-cover"><div class="p-6 md:p-10"><div class="flex gap-2 mb-4"><span id="detailCategory" class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs"></span><span id="detailDate" class="text-stone-400 text-xs"></span></div><h1 id="detailTitle" class="font-serif text-3xl md:text-5xl font-bold text-stone-800 mb-5"></h1><div id="detailTags" class="flex flex-wrap gap-2 mb-6"></div><div id="detailFullContent" class="blog-content-rich text-stone-700 leading-relaxed"></div></div></article>
+    </div>
+  </div>
+
+  <footer id="mainFooter" class="bg-stone-900 text-stone-300 pt-16 pb-8">
+    <div class="container mx-auto px-5 lg:px-8 grid md:grid-cols-3 gap-10"><div><i class="fas fa-leaf text-3xl text-amber-500"></i><span class="font-serif text-2xl font-bold text-white ml-2">AyuraNature</span><p class="text-sm mt-2">Holistic wisdom for modern life.</p></div><div><h4 class="font-semibold text-white text-lg mb-4">Categories</h4><ul id="footerCategoryLinks" class="space-y-2 text-sm"></ul></div><div><h4 class="font-semibold text-white text-lg mb-4">Legal</h4><div class="flex flex-col space-y-2"><a href="#" id="disclaimerLink" class="footer-link">Disclaimer</a><a href="#" id="privacyLink" class="footer-link">Privacy</a><a href="#" id="termsLink" class="footer-link">Terms</a></div><div class="flex gap-5 mt-6 text-2xl"><a href="#" class="footer-link"><i class="fab fa-facebook"></i></a><a href="#" class="footer-link"><i class="fab fa-instagram"></i></a></div><p class="text-xs text-stone-500 mt-6">© 2025 AyuraNature</p></div></div>
+  </footer>
+
+  <div id="modalOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden justify-center items-center z-50"><div class="bg-white max-w-2xl w-full mx-4 rounded-2xl p-6"><div class="flex justify-between mb-3"><h3 id="modalTitle" class="font-serif text-2xl font-bold"></h3><button id="closeModalBtn"><i class="fas fa-times text-xl"></i></button></div><div id="modalContent" class="text-stone-700"></div></div></div>
+
+  <script>
+    // ------------------------------
+    // CONFIGURABLE API ENDPOINT – Easily change URL for future updates
+    const API_BASE_URL = window.location.protocol === 'file:'
+      ? 'https://blogserver-backhend.onrender.com/api/posts'
+      : '/api/posts';    // ------------------------------
+    
+    let posts = [];
+    let currentSearch = "", currentCategory = "", currentTopic = "";
+    let sliderIndex = 0, recentList = [];
+
+    // Helper: check if post is new (< 24h)
+    function isNewPost(dateStr) {
+      const postDate = new Date(dateStr);
+      const diffHours = (new Date() - postDate) / (1000 * 60 * 60);
+      return diffHours <= 24;
+    }
+
+    // Fetch posts from API with fallback
+    async function fetchPostsFromAPI() {
+      try {
+        const response = await fetch(API_BASE_URL);
+        if (!response.ok) throw new Error('API response error');
+        const apiPosts = await response.json();
+        
+        // Transform API data if necessary
+        return apiPosts.map(p => ({
+          id: p._id,
+          title: p.title,
+          excerpt: p.excerpt,
+          category: p.category,
+          tags: p.tags,
+          featured: p.featured,
+          date: p.date.split('T')[0],
+          image: p.image.url,
+          fullContent: p.fullContent
+        }));
+      } catch (error) {
+        console.warn("API fetch failed, using fallback data", error);
+        // Fallback static posts (ensures site always works)
+        return [
+          { id: 1, title: "Ancient Ayurvedic Rituals for Daily Detox", excerpt: "Triphala, oil pulling and more.", category: "Ayurveda & Natural Remedies", tags: ["Ayurveda"], featured: true, date: new Date().toISOString().slice(0,10), image: "https://picsum.photos/id/127/800/600", fullContent: "<p>Deep wisdom from the Vedas.</p>" },
+          { id: 2, title: "Mindful Eating Guide", excerpt: "Balance your doshas through food.", category: "Nutrition & Diet", tags: ["Nutrition"], featured: true, date: new Date().toISOString().slice(0,10), image: "https://picsum.photos/id/135/800/600", fullContent: "<p>Eat with awareness.</p>" }
+        ];
+      }
+    }
+
+    // Filter logic
+    function getFilteredPosts() {
+      return posts.filter(p => 
+        (!currentSearch || p.title.toLowerCase().includes(currentSearch) || p.excerpt.toLowerCase().includes(currentSearch)) &&
+        (!currentCategory || p.category === currentCategory) &&
+        (!currentTopic || p.tags.some(t => t.toLowerCase() === currentTopic.toLowerCase()))
+      );
+    }
+
+    function getAllTags() {
+      const freq = new Map();
+      posts.forEach(p => p.tags.forEach(t => freq.set(t, (freq.get(t)||0)+1)));
+      return Array.from(freq.entries()).map(([n,c]) => ({name:n, count:c})).sort((a,b)=>b.count-a.count).slice(0,8);
+    }
+
+    // Render UI sections
+    function renderHorizontalFeatured() {
+      const featured = getFilteredPosts().filter(p => p.featured);
+      const container = document.getElementById("horizontalFeaturedContainer");
+      const noMsg = document.getElementById("noFeaturedMsg");
+      if (!featured.length) { container.innerHTML = ""; noMsg.classList.remove("hidden"); return; }
+      noMsg.classList.add("hidden");
+      container.innerHTML = featured.map(p => `
+        <div class="featured-premium-card" data-id="${p.id}">
+          ${isNewPost(p.date) ? '<div class="new-badge"><i class="fas fa-clock mr-1"></i>NEW 24h</div>' : ''}
+          <img src="${p.image}" class="h-52 w-full object-cover" loading="lazy">
+          <div class="p-5"><span class="text-xs bg-emerald-50 px-3 py-1 rounded-full">${p.category}</span><h3 class="font-serif text-xl font-bold mt-2">${p.title.substring(0,55)}</h3><p class="text-stone-600 text-sm mt-2 line-clamp-3">${p.excerpt.substring(0,100)}...</p><div class="mt-4 flex justify-between"><span class="text-xs"><i class="far fa-calendar-alt"></i> ${p.date}</span><span class="text-emerald-700 font-medium">Read →</span></div></div>
+        </div>`).join('');
+      attachCardListeners();
+    }
+
+    function renderRecentSlider() {
+      const recent = getFilteredPosts().filter(p => !p.featured).sort((a,b)=>new Date(b.date)-new Date(a.date));
+      recentList = recent;
+      const track = document.getElementById("recentSliderTrack");
+      const emptyMsg = document.getElementById("sliderEmptyMsg");
+      if (!recent.length) { track.innerHTML = ""; emptyMsg.classList.remove("hidden"); return; }
+      emptyMsg.classList.add("hidden");
+      track.innerHTML = recent.map(p => `
+        <div class="slider-card-premium" data-id="${p.id}">
+          ${isNewPost(p.date) ? '<div class="new-badge"><i class="fas fa-star"></i> Fresh</div>' : ''}
+          <img src="${p.image}" class="h-48 w-full object-cover"><div class="p-5"><span class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full">${p.category}</span><h4 class="font-serif text-xl font-bold mt-2">${p.title.substring(0,60)}</h4><p class="text-stone-500 text-sm mt-1 line-clamp-2">${p.excerpt.substring(0,80)}...</p><div class="mt-3 text-right text-emerald-600 text-sm">Read full →</div></div>
+        </div>`).join('');
+      sliderIndex = 0; setTimeout(updateSliderPos, 50);
+      attachCardListeners();
+    }
+
+    function renderAllPostsGridWithAds() {
+      const filtered = getFilteredPosts();
+      const container = document.getElementById("allPostsGridContainer");
+      const noMsg = document.getElementById("noPostsGridMsg");
+      if (!filtered.length) { container.innerHTML = ""; noMsg.classList.remove("hidden"); return; }
+      noMsg.classList.add("hidden");
+      let html = '';
+      filtered.forEach((post, idx) => {
+        html += `<div class="post-card-grid" data-id="${post.id}"><img src="${post.image}" class="h-52 w-full object-cover"><div class="p-5"><span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">${post.category}</span><h3 class="font-bold text-xl mt-2">${post.title.substring(0,70)}</h3><p class="text-stone-500 text-sm mt-1 line-clamp-2">${post.excerpt.substring(0,90)}...</p><div class="mt-3 flex justify-between"><span class="text-xs text-stone-400">${post.date}</span><span class="text-emerald-700 text-sm font-medium">Read more →</span></div></div></div>`;
+        // Insert ad after every 3 posts (not after last)
+        if ((idx + 1) % 3 === 0 && idx !== filtered.length - 1) {
+          html += `<div class="ad-card flex flex-col justify-center items-center p-6 bg-gradient-to-br from-amber-50 to-stone-50 rounded-2xl border border-amber-200"><i class="fas fa-ad text-3xl text-amber-600 mb-2"></i><span class="font-bold text-stone-700">Sponsored Content</span><p class="text-sm text-stone-500 mt-1">Natural supplements • Herbal teas • Free guide</p><button class="mt-3 bg-amber-600 text-white text-xs px-4 py-2 rounded-full">Learn More</button><div class="text-[10px] text-stone-400 mt-2">Advertisement</div></div>`;
+        }
+      });
+      container.innerHTML = html;
+      document.querySelectorAll('.post-card-grid').forEach(card => card.addEventListener('click', () => { const id = card.getAttribute('data-id'); if(id) showDetailView(id); }));
+    }
+
+    function renderPopularTopics() {
+      const topics = getAllTags();
+      const container = document.getElementById("popularTopicsContainer");
+      container.innerHTML = topics.map(t => `<span data-topic="${t.name}" class="topic-chip-premium border border-stone-300 px-4 py-2 rounded-full text-sm font-medium ${currentTopic===t.name ? 'active-topic' : 'bg-white'}">#${t.name} (${t.count})</span>`).join('');
+      document.querySelectorAll("#popularTopicsContainer .topic-chip-premium").forEach(el => el.addEventListener("click", () => { currentTopic = (currentTopic === el.getAttribute("data-topic")) ? "" : el.getAttribute("data-topic"); renderAllDynamic(); }));
+    }
+
+    function renderDynamicCategories() {
+      const cats = [...new Set(posts.map(p=>p.category))];
+      const container = document.getElementById("dynamicCategoriesContainer");
+      if(!container) return;
+      container.innerHTML = cats.map(cat => `<div data-cat="${cat}" class="category-card-premium"><i class="fas ${cat.includes('Ayurveda')?'fa-mortar-pestle':cat.includes('Nutrition')?'fa-carrot':cat.includes('Yoga')?'fa-praying-hands':'fa-leaf'} text-4xl text-amber-700 mb-3"></i><h3 class="font-bold text-xl">${cat}</h3><p class="text-sm text-stone-500">Explore wisdom</p></div>`).join('');
+      document.querySelectorAll(".category-card-premium").forEach(c => c.addEventListener("click", () => { currentCategory = (currentCategory === c.getAttribute("data-cat")) ? "" : c.getAttribute("data-cat"); currentTopic = ""; renderAllDynamic(); }));
+    }
+
+    function renderFooterCategories() {
+      const cats = [...new Set(posts.map(p=>p.category))];
+      const footerList = document.getElementById("footerCategoryLinks");
+      if(footerList) footerList.innerHTML = cats.map(c => `<li><a href="#" data-cat="${c}" class="footer-link text-sm">${c}</a></li>`).join('');
+      footerList?.querySelectorAll('a').forEach(a => a.addEventListener('click',(e)=>{ e.preventDefault(); currentCategory=a.getAttribute('data-cat'); currentTopic=""; renderAllDynamic(); }));
+    }
+
+    function attachCardListeners() {
+      document.querySelectorAll('.featured-premium-card, .slider-card-premium').forEach(card => card.addEventListener('click', (e) => { const id = card.getAttribute('data-id'); if(id) showDetailView(id); }));
+    }
+
+    function showDetailView(id) {
+      const post = posts.find(p => p.id == id);
+      if(!post) return;
+      document.getElementById("detailImage").src = post.image;
+      document.getElementById("detailCategory").innerText = post.category;
+      document.getElementById("detailDate").innerHTML = `<i class="far fa-calendar-alt mr-1"></i> ${post.date}`;
+      document.getElementById("detailTitle").innerText = post.title;
+      document.getElementById("detailTags").innerHTML = post.tags.map(t => `<span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs">#${t}</span>`).join('');
+      document.getElementById("detailFullContent").innerHTML = post.fullContent || `<p>${post.excerpt}</p>`;
+      document.getElementById("mainHomeView").classList.add("hidden");
+      document.getElementById("detailView").classList.remove("hidden");
+      if(document.getElementById("mainFooter")) document.getElementById("mainFooter").classList.add("hidden");
+      window.scrollTo(0,0);
+    }
+
+    function backToHome() {
+      document.getElementById("mainHomeView").classList.remove("hidden");
+      document.getElementById("detailView").classList.add("hidden");
+      if(document.getElementById("mainFooter")) document.getElementById("mainFooter").classList.remove("hidden");
+      renderAllDynamic();
+      window.scrollTo(0,0);
+    }
+
+    function updateSliderPos() {
+      const track = document.getElementById("recentSliderTrack");
+      if(!track || !recentList.length) return;
+      const firstCard = track.children[0];
+      if(!firstCard) return;
+      const cardWidth = firstCard.offsetWidth + 28;
+      const container = document.querySelector(".slider-premium");
+      let slides = window.innerWidth >= 1024 ? 3 : (window.innerWidth >= 768 ? 2 : 1);
+      const maxIndex = Math.max(0, recentList.length - slides);
+      if(sliderIndex > maxIndex) sliderIndex = maxIndex;
+      track.style.transform = `translateX(-${sliderIndex * cardWidth}px)`;
+    }
+
+    function nextSlide() { if(recentList.length){ let slides = window.innerWidth>=1024?3:window.innerWidth>=768?2:1; const max = Math.max(0, recentList.length-slides); if(sliderIndex<max) { sliderIndex++; updateSliderPos(); } } }
+    function prevSlide() { if(recentList.length && sliderIndex>0) { sliderIndex--; updateSliderPos(); } }
+
+    function renderAllDynamic() {
+      if(!document.getElementById("mainHomeView").classList.contains("hidden")) {
+        renderHorizontalFeatured(); renderPopularTopics(); renderRecentSlider(); renderAllPostsGridWithAds();
+      }
+    }
+
+    function resetFilters() {
+      currentSearch = ""; currentCategory = ""; currentTopic = "";
+      document.getElementById("globalSearchInput") && (document.getElementById("globalSearchInput").value = "");
+      document.getElementById("mobileSearchInput") && (document.getElementById("mobileSearchInput").value = "");
+      renderAllDynamic();
+      showToast("✨ Filters reset, fresh content loaded");
+    }
+    function showToast(msg) { let t=document.querySelector('.toast-notify'); if(t) t.remove(); const div=document.createElement('div'); div.className='toast-notify'; div.innerHTML=`<i class="fas fa-leaf mr-2"></i>${msg}`; document.body.appendChild(div); setTimeout(()=>div.remove(),2500); }
+
+    // INIT
+    (async function init() {
+      posts = await fetchPostsFromAPI();
+      renderDynamicCategories();
+      renderFooterCategories();
+      renderAllDynamic();
+      window.addEventListener('resize', updateSliderPos);
+      const sliderDiv = document.getElementById("swipeSliderContainer");
+      let startX = 0;
+      sliderDiv.addEventListener("touchstart", e => startX = e.changedTouches[0].screenX, {passive:true});
+      sliderDiv.addEventListener("touchend", e => { const delta = e.changedTouches[0].screenX - startX; if(Math.abs(delta)>50) delta>0 ? prevSlide() : nextSlide(); });
+      document.getElementById("globalSearchInput")?.addEventListener("input", e => { currentSearch = e.target.value; renderAllDynamic(); });
+      document.getElementById("mobileSearchInput")?.addEventListener("input", e => { currentSearch = e.target.value; renderAllDynamic(); });
+      document.getElementById("resetFiltersBtn")?.addEventListener("click", resetFilters);
+      document.getElementById("prevSlideBtn")?.addEventListener("click", prevSlide);
+      document.getElementById("nextSlideBtn")?.addEventListener("click", nextSlide);
+      document.getElementById("backToHomeBtn")?.addEventListener("click", backToHome);
+      document.getElementById("refreshBtn")?.addEventListener("click", resetFilters);
+      document.getElementById("mobileRefreshBtn")?.addEventListener("click", resetFilters);
+      // legal modals
+      const modal = document.getElementById("modalOverlay"), showLegal = (t,c) => { document.getElementById("modalTitle").innerText=t; document.getElementById("modalContent").innerHTML=c; modal.classList.remove("hidden"); modal.classList.add("flex"); };
+      document.getElementById("termsLink")?.addEventListener("click", e => { e.preventDefault(); showLegal("Terms & Conditions","<p>Information only, not medical advice.</p>"); });
+      document.getElementById("disclaimerLink")?.addEventListener("click", e => { e.preventDefault(); showLegal("Disclaimer","<p>Consult your physician before making health changes.</p>"); });
+      document.getElementById("privacyLink")?.addEventListener("click", e => { e.preventDefault(); showLegal("Privacy Policy","<p>We respect your privacy. No data is shared.</p>"); });
+      document.getElementById("closeModalBtn")?.addEventListener("click", () => { modal.classList.add("hidden"); modal.classList.remove("flex"); });
+      // navigation
+      const scrollTo = (id) => { if(!document.getElementById("mainHomeView").classList.contains("hidden")) document.getElementById(id)?.scrollIntoView({behavior:"smooth"}); };
+      document.getElementById("desktopHomeLink")?.addEventListener("click", e => { e.preventDefault(); scrollTo("home"); });
+      document.getElementById("desktopHubLink")?.addEventListener("click", e => { e.preventDefault(); scrollTo("featured-section"); });
+      document.getElementById("desktopContactLink")?.addEventListener("click", e => { e.preventDefault(); scrollTo("about-contact"); });
+      document.getElementById("mobileHomeLink")?.addEventListener("click", e => { e.preventDefault(); scrollTo("home"); document.getElementById("mobileMenu")?.classList.add("hidden"); });
+      document.getElementById("mobileHubLink")?.addEventListener("click", e => { e.preventDefault(); scrollTo("featured-section"); document.getElementById("mobileMenu")?.classList.add("hidden"); });
+      document.getElementById("mobileContactLink")?.addEventListener("click", e => { e.preventDefault(); scrollTo("about-contact"); document.getElementById("mobileMenu")?.classList.add("hidden"); });
+      document.getElementById("mobileMenuBtn")?.addEventListener("click", () => document.getElementById("mobileMenu")?.classList.toggle("hidden"));
+      document.getElementById("mobileSearchToggle")?.addEventListener("click", () => document.getElementById("mobileSearchContainer")?.classList.toggle("hidden"));
+    })();
+  </script>
+</body>
+</html>
