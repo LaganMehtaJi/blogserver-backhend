@@ -1,9 +1,15 @@
 import mongoose from "mongoose";
 function ConnectDB(){
-mongoose.connect(process.env.MONGO_URL).then((res)=>{
-    console.log('Mongo Db Start');
-}).catch((error)=>{
-     console.log('Mongo Db not Start',error);
-})
+  const mongoUrl = process.env.MONGO_URL;
+  if (!mongoUrl) {
+    console.error("❌ MONGO_URL is not defined in environment variables!");
+    return;
+  }
+
+  mongoose.connect(mongoUrl).then((res)=>{
+    console.log('✅ MongoDB Connected Successfully');
+  }).catch((error)=>{
+    console.error('❌ MongoDB Connection Failed:', error.message);
+  })
 }
 export default ConnectDB;

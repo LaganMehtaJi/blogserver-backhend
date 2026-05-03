@@ -3,37 +3,62 @@ import ConnectDB from "./config/db.js";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Routes
-import locationRoutes from "./routes/location.routes.js";   // SAME
-import ImagesRoutes from "./routes/AddImages.routes.js";    // SAME
 import productRoutes from "./routes/Product.routes.js";
-import queryRoutes from "./routes/Query.routes.js";
-import orderRoutes from "./routes/Order.routes.js";
+import postRoutes from "./routes/Post.routes.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl) or local files (origin: null)
+    if (!origin || origin === 'null') {
+      return callback(null, true);
+    }
+    callback(null, true); // Allow all other origins as well
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from the "Frontend" directory
+app.use(express.static(path.join(__dirname, "../Frontend")));
 
 // ============================
 // API Routes
 // ============================
 
-
-app.use("/api", locationRoutes);        // SAME
-app.use("/api", ImagesRoutes);          // SAME
-
 app.use("/api/products", productRoutes);
+app.use("/api/posts", postRoutes);
 
-app.use("/api/queries", queryRoutes);
+// Health Check
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok", message: "Server is running and .env is loaded correctly" });
+});
 
-app.use("/api/orders", orderRoutes);
+// ============================
+// Serve Frontend
+// ============================
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../Frontend/index.html"));
+});
+
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "../Frontend/admin.html"));
+});
 
 // ============================
 // Connect DB & Start Server
@@ -41,11 +66,10 @@ app.use("/api/orders", orderRoutes);
 
 ConnectDB();
 
-app.listen(process.env.PORT, (error) => {
+app.listen(process.env.PORT || 8080, (error) => {
   if (error) {
     console.log(`Error: ${error}`);
   } else {
-    console.log(`Server running on port ${process.env.PORT} 🚀`);
+    console.log(`Server running on port ${process.env.PORT || 8080} 🚀`);
   }
 });
-``
