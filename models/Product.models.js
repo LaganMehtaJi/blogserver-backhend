@@ -29,6 +29,12 @@ const productSchema = new mongoose.Schema(
         "Food Containers",
         "Cutlery",
         "Packaging Supplies",
+        "Essential Oils",
+        "Herbal Teas",
+        "Natural Skincare",
+        "Wellness Supplements",
+        "Aromatherapy",
+        "Organic Seeds",
       ],
       index: true, // filtering by category
     },

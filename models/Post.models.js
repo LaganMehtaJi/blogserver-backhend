@@ -35,7 +35,16 @@ const postSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    image: {
+    outerImage: {
+      id: {
+        type: String,
+      },
+      url: {
+        type: String,
+        required: true,
+      },
+    },
+    innerImage: {
       id: {
         type: String,
       },

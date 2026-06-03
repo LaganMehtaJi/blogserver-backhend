@@ -14,7 +14,8 @@ export const addPost = async (req, res) => {
       tags,
       featured,
       date,
-      imageUrl // Optional if no file is uploaded
+      outerImageUrl,
+      innerImageUrl
     } = req.body;
 
     // Basic validation
@@ -22,19 +23,22 @@ export const addPost = async (req, res) => {
       return res.status(400).json({ message: "Required fields are missing" });
     }
 
-    let image = { id: "", url: imageUrl || "https://picsum.photos/id/134/800/600" };
+    let outerImage = { id: "", url: outerImageUrl || "https://picsum.photos/id/134/800/600" };
+    let innerImage = { id: "", url: innerImageUrl || "https://picsum.photos/id/134/800/600" };
 
-    // If file uploaded to Cloudinary via Multer
-    if (req.file) {
-      image = {
-        id: req.file.filename, // This is the public_id in multer-storage-cloudinary
-        url: req.file.path,     // This is the secure_url in multer-storage-cloudinary
-      };
-    } else if (req.files && req.files.length > 0) {
-      image = {
-        id: req.files[0].filename,
-        url: req.files[0].path,
-      };
+    if (req.files) {
+      if (req.files.outerImage) {
+        outerImage = {
+          id: req.files.outerImage[0].filename,
+          url: req.files.outerImage[0].path,
+        };
+      }
+      if (req.files.innerImage) {
+        innerImage = {
+          id: req.files.innerImage[0].filename,
+          url: req.files.innerImage[0].path,
+        };
+      }
     }
 
     const newPost = new Post({
@@ -45,7 +49,8 @@ export const addPost = async (req, res) => {
       tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
       featured: featured === 'true' || featured === true,
       date: date || new Date(),
-      image,
+      outerImage,
+      innerImage,
     });
 
     await newPost.save();
@@ -101,35 +106,39 @@ export const updatePost = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    let updatedImage = post.image;
+    let updatedOuterImage = post.outerImage;
+    let updatedInnerImage = post.innerImage;
 
-    // If new image uploaded
-    if (req.file) {
-      // Delete old image from Cloudinary if it exists
-      if (post.image && post.image.id) {
-        await cloudinary.uploader.destroy(post.image.id);
+    if (req.files) {
+      if (req.files.outerImage) {
+        if (post.outerImage && post.outerImage.id) {
+          await cloudinary.uploader.destroy(post.outerImage.id);
+        }
+        updatedOuterImage = {
+          id: req.files.outerImage[0].filename,
+          url: req.files.outerImage[0].path,
+        };
       }
-      updatedImage = {
-        id: req.file.filename,
-        url: req.file.path,
-      };
-    } else if (req.files && req.files.length > 0) {
-      if (post.image && post.image.id) {
-        await cloudinary.uploader.destroy(post.image.id);
+      if (req.files.innerImage) {
+        if (post.innerImage && post.innerImage.id) {
+          await cloudinary.uploader.destroy(post.innerImage.id);
+        }
+        updatedInnerImage = {
+          id: req.files.innerImage[0].filename,
+          url: req.files.innerImage[0].path,
+        };
       }
-      updatedImage = {
-        id: req.files[0].filename,
-        url: req.files[0].path,
-      };
-    } else if (req.body.imageUrl) {
-        updatedImage = { id: "", url: req.body.imageUrl };
     }
+
+    if (req.body.outerImageUrl) updatedOuterImage = { id: "", url: req.body.outerImageUrl };
+    if (req.body.innerImageUrl) updatedInnerImage = { id: "", url: req.body.innerImageUrl };
 
     const updatedData = {
       ...req.body,
       tags: req.body.tags ? (typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags) : undefined,
       featured: req.body.featured !== undefined ? (req.body.featured === 'true' || req.body.featured === true) : undefined,
-      image: updatedImage
+      outerImage: updatedOuterImage,
+      innerImage: updatedInnerImage
     };
 
     const updatedPost = await Post.findByIdAndUpdate(
@@ -159,9 +168,12 @@ export const deletePost = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    // Delete image from Cloudinary
-    if (post.image && post.image.id) {
-      await cloudinary.uploader.destroy(post.image.id);
+    // Delete images from Cloudinary
+    if (post.outerImage && post.outerImage.id) {
+      await cloudinary.uploader.destroy(post.outerImage.id);
+    }
+    if (post.innerImage && post.innerImage.id) {
+      await cloudinary.uploader.destroy(post.innerImage.id);
     }
 
     await Post.findByIdAndDelete(id);

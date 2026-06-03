@@ -11,7 +11,7 @@ import {
 const router = express.Router();
 
 // Add Post
-router.post("/add", upload.single("image"), addPost);
+router.post("/add", upload.fields([{ name: 'outerImage', maxCount: 1 }, { name: 'innerImage', maxCount: 1 }]), addPost);
 
 // Get All Posts
 router.get("/", getAllPosts);
@@ -20,7 +20,7 @@ router.get("/", getAllPosts);
 router.get("/:id", getPostById);
 
 // Update Post
-router.put("/update/:id", upload.single("image"), updatePost);
+router.put("/update/:id", upload.fields([{ name: 'outerImage', maxCount: 1 }, { name: 'innerImage', maxCount: 1 }]), updatePost);
 
 // Delete Post
 router.delete("/delete/:id", deletePost);
