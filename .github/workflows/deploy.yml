@@ -66,9 +66,7 @@ jobs:
             git reset --hard origin/master
 
             echo "Writing .env file..."
-            cat > .env << 'EOT'
-            ${ENV_FILE}
-            EOT
+            printf "%s" "$ENV_FILE" > .env
 
             echo ".env created successfully."
 
