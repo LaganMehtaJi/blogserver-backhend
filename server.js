@@ -45,7 +45,7 @@ app.use("/api/posts", postRoutes);
 
 // Health Check
 app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "ok", message: "Server is running and .env is loaded correctly" });
+  res.status(200).json({ status: "ok", message: "Server is running and .env is loaded correctly [Lagan]" });
 });
 
 // ============================
