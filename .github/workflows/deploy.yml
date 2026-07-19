@@ -75,17 +75,8 @@ jobs:
             echo "Installing dependencies..."
             npm install
 
-            echo "PM2 status before restart:"
-            pm2 list
-
             echo "Reloading application..."
-            pm2 reload backend || pm2 start npm --name backend -- start
-
-            echo "Saving PM2 process list..."
-            pm2 save
-
-            echo "PM2 status after restart:"
-            pm2 list
+            pm2 reload backend
 
             echo "Deployment completed successfully."
           EOF
