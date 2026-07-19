@@ -4,6 +4,7 @@ import {
   addPost,
   getAllPosts,
   getPostById,
+  getPostByTitle,
   updatePost,
   deletePost,
 } from "../controllers/Post.controllers.js";
@@ -16,8 +17,11 @@ router.post("/add", upload.fields([{ name: 'outerImage', maxCount: 1 }, { name: 
 // Get All Posts
 router.get("/", getAllPosts);
 
-// Get Single Post
+// Get Single Post by ID
 router.get("/:id", getPostById);
+
+// Get Single Post by Title
+router.get("/title/:title", getPostByTitle);
 
 // Update Post
 router.put("/update/:id", upload.fields([{ name: 'outerImage', maxCount: 1 }, { name: 'innerImage', maxCount: 1 }]), updatePost);

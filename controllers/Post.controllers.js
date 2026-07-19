@@ -96,6 +96,34 @@ export const getPostById = async (req, res) => {
 };
 
 // =======================================
+// 🔍 Get Post By Title
+// =======================================
+export const getPostByTitle = async (req, res) => {
+  try {
+    const { title } = req.params;
+    // Decode the title in case it is URL encoded, then find by exact match
+    // Or we can use regex to ignore case
+    const decodedTitle = decodeURIComponent(title);
+    
+    // We try to find a post matching the title exactly (case-insensitive)
+    const post = await Post.findOne({ 
+      title: { $regex: new RegExp(`^${decodedTitle}$`, 'i') } 
+    });
+    
+    if (!post) {
+      // Sometimes frontend might pass slugs with hyphens, handle if needed
+      // const hyphenReplaced = decodedTitle.replace(/-/g, ' ');
+      // const postFallback = await Post.findOne({ title: { $regex: new RegExp(`^${hyphenReplaced}$`, 'i') } });
+      return res.status(404).json({ message: "Post not found" });
+    }
+    res.status(200).json(post);
+  } catch (error) {
+    console.error("Error fetching post by title:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};
+
+// =======================================
 // ✏️ Update Post
 // =======================================
 export const updatePost = async (req, res) => {
