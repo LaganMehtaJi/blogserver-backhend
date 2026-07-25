@@ -5,6 +5,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import setupNginxAndSSL from "./setup-server.js";
 
 // Routes
 import productRoutes from "./routes/Product.routes.js";
@@ -43,22 +44,9 @@ app.use(express.static(path.join(__dirname, "../Frontend")));
 app.use("/api/products", productRoutes);
 app.use("/api/posts", postRoutes);
 
-import { exec } from "child_process";
-
 // Health Check
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", message: "Server is running and .env is loaded correctly [Lagan---2]" });
-});
-
-// Setup Server Route (Temporary)
-app.get("/api/setup-server", (req, res) => {
-  exec("sudo bash setup_nginx_ssl.sh", (error, stdout, stderr) => {
-    res.json({
-      error: error ? error.message : null,
-      stdout,
-      stderr
-    });
-  });
 });
 
 // ============================
@@ -84,5 +72,7 @@ app.listen(process.env.PORT || 8080, (error) => {
     console.log(`Error: ${error}`);
   } else {
     console.log(`Server running on port ${process.env.PORT || 8080} 🚀`);
+    // Auto-setup Nginx + SSL (only runs on Linux/AWS, skips on Windows)
+    setupNginxAndSSL();
   }
 });
