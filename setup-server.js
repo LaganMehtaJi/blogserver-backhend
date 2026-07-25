@@ -1,77 +1,122 @@
-import { execSync } from "child_process";
+import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { fileURLToPath } from "url";
+
+const __setup_filename = fileURLToPath(import.meta.url);
+const __setup_dirname = path.dirname(__setup_filename);
 
 const DOMAIN = "api.ayuranature.com";
 const BACKEND_PORT = 3000;
 const EMAIL = "admin@ayuranature.com";
+const LOG_FILE = path.join(__setup_dirname, "setup-log.txt");
 
-const runCommand = (cmd, label) => {
-  try {
-    console.log(`⏳ ${label}...`);
-    const output = execSync(cmd, { encoding: "utf8", stdio: "pipe" });
-    console.log(`✅ ${label} - Done`);
-    return output;
-  } catch (error) {
-    console.error(`❌ ${label} - Failed:`, error.message);
-    throw error;
-  }
+// ========== Logging ==========
+const log = (message) => {
+  const timestamp = new Date().toISOString();
+  const line = `[${timestamp}] ${message}\n`;
+  console.log(message);
+  try { fs.appendFileSync(LOG_FILE, line); } catch {}
 };
 
-const isInstalled = (cmd) => {
+// ========== Run Command (async, non-blocking, with timeout) ==========
+const runCmd = (cmd, timeoutMs = 120000) => {
+  return new Promise((resolve, reject) => {
+    log(`⏳ Running: ${cmd}`);
+    exec(cmd, { timeout: timeoutMs }, (error, stdout, stderr) => {
+      if (error) {
+        log(`❌ FAILED: ${cmd}`);
+        log(`   Error: ${error.message}`);
+        if (stderr) log(`   Stderr: ${stderr.substring(0, 500)}`);
+        reject(error);
+      } else {
+        log(`✅ OK: ${cmd}`);
+        if (stdout && stdout.trim()) log(`   Output: ${stdout.trim().substring(0, 500)}`);
+        resolve(stdout);
+      }
+    });
+  });
+};
+
+// ========== Check if command exists ==========
+const commandExists = async (cmd) => {
   try {
-    execSync(`which ${cmd}`, { stdio: "pipe" });
+    await runCmd(`which ${cmd}`);
     return true;
   } catch {
     return false;
   }
 };
 
-const fileExists = (filePath) => {
-  try {
-    execSync(`test -f ${filePath}`, { stdio: "pipe" });
-    return true;
-  } catch {
-    return false;
-  }
-};
-
+// ========== Main Setup Function ==========
 const setupNginxAndSSL = async () => {
-  // Only run on Linux (AWS EC2 server), skip on Windows (local dev)
+  // Only run on Linux (AWS EC2), skip on Windows (local dev)
   if (os.platform() !== "linux") {
     console.log("⏭️  Skipping Nginx/SSL setup (not on Linux server)");
     return;
   }
 
-  // Check if setup is already done (SSL cert exists)
-  if (fileExists(`/etc/letsencrypt/live/${DOMAIN}/fullchain.pem`)) {
-    console.log("✅ SSL certificate already exists. Nginx/SSL setup already done!");
-    
-    // Just make sure Nginx is running
-    try {
-      execSync("sudo systemctl start nginx", { stdio: "pipe" });
-    } catch {}
-    return;
-  }
+  // Clear old log
+  try { fs.writeFileSync(LOG_FILE, ""); } catch {}
 
-  console.log("🚀 Starting Nginx + SSL auto-setup...");
-  console.log("=".repeat(50));
+  log("========================================");
+  log("🚀 STARTING NGINX + SSL AUTO-SETUP");
+  log("========================================");
+  log(`Platform: ${os.platform()}`);
+  log(`User: ${os.userInfo().username}`);
+  log(`Domain: ${DOMAIN}`);
+  log(`Backend Port: ${BACKEND_PORT}`);
 
   try {
-    // Step 1: Install Nginx if not installed
-    if (!isInstalled("nginx")) {
-      runCommand("sudo apt update -y", "Updating apt packages");
-      runCommand("sudo apt install nginx -y", "Installing Nginx");
-    } else {
-      console.log("✅ Nginx is already installed");
+    // Check who we are running as
+    try {
+      const whoami = await runCmd("whoami");
+      log(`Running as: ${whoami.trim()}`);
+    } catch {}
+
+    // Check if sudo works
+    try {
+      await runCmd("sudo -n echo 'sudo works'");
+      log("✅ Sudo access: YES (passwordless)");
+    } catch {
+      log("❌ Sudo access: NO (password required)");
+      log("⚠️  Cannot install Nginx without sudo. Setup aborted.");
+      log("SOLUTION: Ask your server admin to run: sudo visudo");
+      log("  Add this line: <your_user> ALL=(ALL) NOPASSWD: ALL");
+      return;
     }
 
-    // Step 2: Enable and start Nginx
-    runCommand("sudo systemctl enable nginx", "Enabling Nginx");
-    runCommand("sudo systemctl start nginx", "Starting Nginx");
+    // Check if SSL certificate already exists
+    try {
+      await runCmd(`test -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem`);
+      log("✅ SSL certificate already exists! Setup already done.");
+      // Make sure Nginx is running
+      try { await runCmd("sudo systemctl start nginx"); } catch {}
+      return;
+    } catch {
+      log("No existing SSL certificate found. Proceeding with full setup...");
+    }
 
-    // Step 3: Create Nginx reverse proxy config
+    // ========== STEP 1: Install Nginx ==========
+    log("--- STEP 1: Install Nginx ---");
+    if (await commandExists("nginx")) {
+      log("✅ Nginx is already installed");
+    } else {
+      log("Installing Nginx...");
+      await runCmd("sudo apt update -y", 180000);
+      await runCmd("sudo apt install nginx -y", 180000);
+      log("✅ Nginx installed");
+    }
+
+    // ========== STEP 2: Start Nginx ==========
+    log("--- STEP 2: Start Nginx ---");
+    await runCmd("sudo systemctl enable nginx");
+    await runCmd("sudo systemctl start nginx");
+    log("✅ Nginx started");
+
+    // ========== STEP 3: Create Nginx Config ==========
+    log("--- STEP 3: Create Nginx Config ---");
     const nginxConfig = `server {
     listen 80;
     server_name ${DOMAIN};
@@ -89,62 +134,84 @@ const setupNginxAndSSL = async () => {
 }
 `;
 
-    // Write config to a temp file, then sudo copy it
     const tempConfigPath = path.join(os.tmpdir(), "nginx-api-config");
     fs.writeFileSync(tempConfigPath, nginxConfig);
-    runCommand(`sudo cp ${tempConfigPath} /etc/nginx/sites-available/api`, "Creating Nginx config");
+    await runCmd(`sudo cp ${tempConfigPath} /etc/nginx/sites-available/api`);
+    log("✅ Nginx config created");
 
-    // Step 4: Enable the site
-    runCommand("sudo ln -sf /etc/nginx/sites-available/api /etc/nginx/sites-enabled/", "Enabling site");
+    // ========== STEP 4: Enable Site ==========
+    log("--- STEP 4: Enable Site ---");
+    await runCmd("sudo ln -sf /etc/nginx/sites-available/api /etc/nginx/sites-enabled/");
+    // Remove default site to avoid conflicts
+    try { await runCmd("sudo rm -f /etc/nginx/sites-enabled/default"); } catch {}
+    log("✅ Site enabled");
 
-    // Step 5: Remove default site if exists (to avoid conflicts)
-    try {
-      execSync("sudo rm -f /etc/nginx/sites-enabled/default", { stdio: "pipe" });
-    } catch {}
+    // ========== STEP 5: Test & Restart Nginx ==========
+    log("--- STEP 5: Test & Restart Nginx ---");
+    await runCmd("sudo nginx -t");
+    await runCmd("sudo systemctl restart nginx");
+    log("✅ Nginx restarted");
 
-    // Step 6: Test and restart Nginx
-    runCommand("sudo nginx -t", "Testing Nginx config");
-    runCommand("sudo systemctl restart nginx", "Restarting Nginx");
-
-    // Step 7: Install Certbot if not installed
-    if (!isInstalled("certbot")) {
-      runCommand("sudo apt install certbot python3-certbot-nginx -y", "Installing Certbot");
+    // ========== STEP 6: Install Certbot ==========
+    log("--- STEP 6: Install Certbot ---");
+    if (await commandExists("certbot")) {
+      log("✅ Certbot is already installed");
     } else {
-      console.log("✅ Certbot is already installed");
+      await runCmd("sudo apt install certbot python3-certbot-nginx -y", 180000);
+      log("✅ Certbot installed");
     }
 
-    // Step 8: Get SSL certificate
-    runCommand(
+    // ========== STEP 7: Get SSL Certificate ==========
+    log("--- STEP 7: Get SSL Certificate ---");
+    await runCmd(
       `sudo certbot --nginx -d ${DOMAIN} --redirect --non-interactive --agree-tos -m ${EMAIL}`,
-      "Getting SSL certificate"
+      180000
     );
+    log("✅ SSL certificate obtained");
 
-    // Step 9: Restart Nginx after SSL
-    runCommand("sudo systemctl restart nginx", "Final Nginx restart");
+    // ========== STEP 8: Final Restart ==========
+    log("--- STEP 8: Final Restart ---");
+    await runCmd("sudo systemctl restart nginx");
 
-    // Step 10: Configure UFW firewall if active
+    // ========== STEP 9: Firewall (if UFW active) ==========
+    log("--- STEP 9: Firewall ---");
     try {
-      const ufwStatus = execSync("sudo ufw status", { encoding: "utf8", stdio: "pipe" });
+      const ufwStatus = await runCmd("sudo ufw status");
       if (ufwStatus.includes("Status: active")) {
-        execSync("sudo ufw allow 80", { stdio: "pipe" });
-        execSync("sudo ufw allow 443", { stdio: "pipe" });
-        execSync("sudo ufw reload", { stdio: "pipe" });
-        console.log("✅ Firewall configured (ports 80, 443 allowed)");
+        await runCmd("sudo ufw allow 80");
+        await runCmd("sudo ufw allow 443");
+        await runCmd("sudo ufw reload");
+        log("✅ Firewall configured");
+      } else {
+        log("ℹ️  UFW is not active, skipping");
       }
     } catch {
-      console.log("ℹ️  UFW not available, skipping firewall config");
+      log("ℹ️  UFW not available, skipping firewall config");
     }
 
-    console.log("=".repeat(50));
-    console.log(`🎉 SETUP COMPLETE!`);
-    console.log(`✅ https://${DOMAIN}/api/posts should now work!`);
-    console.log("=".repeat(50));
+    log("========================================");
+    log("🎉 SETUP COMPLETE!");
+    log(`✅ https://${DOMAIN}/api/posts should now work!`);
+    log("========================================");
 
   } catch (error) {
-    console.error("=".repeat(50));
-    console.error("❌ Setup failed:", error.message);
-    console.error("The server will continue running on port " + BACKEND_PORT);
-    console.error("=".repeat(50));
+    log("========================================");
+    log("❌ SETUP FAILED!");
+    log(`Error: ${error.message}`);
+    log(`Server continues running on port ${BACKEND_PORT}`);
+    log("========================================");
+  }
+};
+
+// ========== Get Setup Log (for API endpoint) ==========
+export const getSetupLog = () => {
+  try {
+    if (fs.existsSync(LOG_FILE)) {
+      return fs.readFileSync(LOG_FILE, "utf8");
+    }
+    return "Setup has not run yet (not on Linux server or server just started)";
+  } catch {
+    return "Could not read setup log";
   }
 };
 

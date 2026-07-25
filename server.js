@@ -5,7 +5,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import setupNginxAndSSL from "./setup-server.js";
+import setupNginxAndSSL, { getSetupLog } from "./setup-server.js";
 
 // Routes
 import productRoutes from "./routes/Product.routes.js";
@@ -46,7 +46,19 @@ app.use("/api/posts", postRoutes);
 
 // Health Check
 app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "ok", message: "Server is running and .env is loaded correctly [Lagan---2]" });
+  res.status(200).json({ status: "ok", message: "Server is running [v3 - Nginx Setup]" });
+});
+
+// Check Nginx Setup Status (view logs)
+app.get("/api/setup-status", (req, res) => {
+  const log = getSetupLog();
+  res.type("text/plain").send(log);
+});
+
+// Manually Trigger Nginx Setup
+app.get("/api/run-setup", async (req, res) => {
+  res.type("text/plain").send("Setup triggered! Check /api/setup-status for progress.");
+  setupNginxAndSSL();
 });
 
 // ============================
