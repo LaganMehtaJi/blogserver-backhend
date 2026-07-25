@@ -43,9 +43,22 @@ app.use(express.static(path.join(__dirname, "../Frontend")));
 app.use("/api/products", productRoutes);
 app.use("/api/posts", postRoutes);
 
+import { exec } from "child_process";
+
 // Health Check
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", message: "Server is running and .env is loaded correctly [Lagan---2]" });
+});
+
+// Setup Server Route (Temporary)
+app.get("/api/setup-server", (req, res) => {
+  exec("sudo bash setup_nginx_ssl.sh", (error, stdout, stderr) => {
+    res.json({
+      error: error ? error.message : null,
+      stdout,
+      stderr
+    });
+  });
 });
 
 // ============================
