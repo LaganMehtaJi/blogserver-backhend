@@ -49,6 +49,14 @@ const commandExists = async (cmd) => {
   }
 };
 
+// ========== Detect Package Manager ==========
+const detectPackageManager = async () => {
+  if (await commandExists("dnf")) return "dnf";
+  if (await commandExists("yum")) return "yum";
+  if (await commandExists("apt")) return "apt";
+  return null;
+};
+
 // ========== Main Setup Function ==========
 const setupNginxAndSSL = async () => {
   // Only run on Linux (AWS EC2), skip on Windows (local dev)
@@ -82,8 +90,6 @@ const setupNginxAndSSL = async () => {
     } catch {
       log("❌ Sudo access: NO (password required)");
       log("⚠️  Cannot install Nginx without sudo. Setup aborted.");
-      log("SOLUTION: Ask your server admin to run: sudo visudo");
-      log("  Add this line: <your_user> ALL=(ALL) NOPASSWD: ALL");
       return;
     }
 
@@ -91,11 +97,19 @@ const setupNginxAndSSL = async () => {
     try {
       await runCmd(`test -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem`);
       log("✅ SSL certificate already exists! Setup already done.");
-      // Make sure Nginx is running
       try { await runCmd("sudo systemctl start nginx"); } catch {}
       return;
     } catch {
       log("No existing SSL certificate found. Proceeding with full setup...");
+    }
+
+    // ========== Detect Package Manager ==========
+    const pkgManager = await detectPackageManager();
+    log(`Package Manager detected: ${pkgManager}`);
+
+    if (!pkgManager) {
+      log("❌ No package manager found (apt/yum/dnf). Cannot proceed.");
+      return;
     }
 
     // ========== STEP 1: Install Nginx ==========
@@ -104,8 +118,19 @@ const setupNginxAndSSL = async () => {
       log("✅ Nginx is already installed");
     } else {
       log("Installing Nginx...");
-      await runCmd("sudo apt update -y", 180000);
-      await runCmd("sudo apt install nginx -y", 180000);
+      if (pkgManager === "dnf") {
+        await runCmd("sudo dnf install nginx -y", 180000);
+      } else if (pkgManager === "yum") {
+        // Amazon Linux 2 - try amazon-linux-extras first
+        try {
+          await runCmd("sudo amazon-linux-extras install nginx1 -y", 180000);
+        } catch {
+          await runCmd("sudo yum install nginx -y", 180000);
+        }
+      } else {
+        await runCmd("sudo apt update -y", 180000);
+        await runCmd("sudo apt install nginx -y", 180000);
+      }
       log("✅ Nginx installed");
     }
 
@@ -136,45 +161,89 @@ const setupNginxAndSSL = async () => {
 
     const tempConfigPath = path.join(os.tmpdir(), "nginx-api-config");
     fs.writeFileSync(tempConfigPath, nginxConfig);
-    await runCmd(`sudo cp ${tempConfigPath} /etc/nginx/sites-available/api`);
+
+    // Check nginx config directory structure
+    // Amazon Linux uses /etc/nginx/conf.d/ instead of sites-available/sites-enabled
+    let useConfD = false;
+    try {
+      await runCmd("test -d /etc/nginx/conf.d");
+      useConfD = true;
+      log("Using /etc/nginx/conf.d/ (Amazon Linux style)");
+    } catch {
+      log("Using /etc/nginx/sites-available/ (Debian/Ubuntu style)");
+    }
+
+    if (useConfD) {
+      // Amazon Linux style
+      await runCmd(`sudo cp ${tempConfigPath} /etc/nginx/conf.d/api.conf`);
+    } else {
+      // Debian/Ubuntu style
+      await runCmd(`sudo cp ${tempConfigPath} /etc/nginx/sites-available/api`);
+      await runCmd("sudo ln -sf /etc/nginx/sites-available/api /etc/nginx/sites-enabled/");
+      try { await runCmd("sudo rm -f /etc/nginx/sites-enabled/default"); } catch {}
+    }
     log("✅ Nginx config created");
 
-    // ========== STEP 4: Enable Site ==========
-    log("--- STEP 4: Enable Site ---");
-    await runCmd("sudo ln -sf /etc/nginx/sites-available/api /etc/nginx/sites-enabled/");
-    // Remove default site to avoid conflicts
-    try { await runCmd("sudo rm -f /etc/nginx/sites-enabled/default"); } catch {}
-    log("✅ Site enabled");
-
-    // ========== STEP 5: Test & Restart Nginx ==========
-    log("--- STEP 5: Test & Restart Nginx ---");
+    // ========== STEP 4: Test & Restart Nginx ==========
+    log("--- STEP 4: Test & Restart Nginx ---");
     await runCmd("sudo nginx -t");
     await runCmd("sudo systemctl restart nginx");
     log("✅ Nginx restarted");
 
-    // ========== STEP 6: Install Certbot ==========
-    log("--- STEP 6: Install Certbot ---");
+    // ========== STEP 5: Install Certbot ==========
+    log("--- STEP 5: Install Certbot ---");
     if (await commandExists("certbot")) {
       log("✅ Certbot is already installed");
     } else {
-      await runCmd("sudo apt install certbot python3-certbot-nginx -y", 180000);
+      log("Installing Certbot...");
+      if (pkgManager === "dnf") {
+        // Amazon Linux 2023
+        try {
+          await runCmd("sudo dnf install certbot python3-certbot-nginx -y", 180000);
+        } catch {
+          log("dnf certbot install failed, trying pip...");
+          await runCmd("sudo pip3 install certbot certbot-nginx", 180000);
+        }
+      } else if (pkgManager === "yum") {
+        // Amazon Linux 2
+        try {
+          await runCmd("sudo amazon-linux-extras install epel -y", 180000);
+        } catch {
+          try {
+            await runCmd("sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm", 180000);
+          } catch {}
+        }
+        try {
+          await runCmd("sudo yum install certbot python2-certbot-nginx -y", 180000);
+        } catch {
+          try {
+            await runCmd("sudo yum install certbot python3-certbot-nginx -y", 180000);
+          } catch {
+            log("yum certbot install failed, trying pip...");
+            await runCmd("sudo pip3 install certbot certbot-nginx", 180000);
+          }
+        }
+      } else {
+        // Ubuntu/Debian
+        await runCmd("sudo apt install certbot python3-certbot-nginx -y", 180000);
+      }
       log("✅ Certbot installed");
     }
 
-    // ========== STEP 7: Get SSL Certificate ==========
-    log("--- STEP 7: Get SSL Certificate ---");
+    // ========== STEP 6: Get SSL Certificate ==========
+    log("--- STEP 6: Get SSL Certificate ---");
     await runCmd(
       `sudo certbot --nginx -d ${DOMAIN} --redirect --non-interactive --agree-tos -m ${EMAIL}`,
       180000
     );
     log("✅ SSL certificate obtained");
 
-    // ========== STEP 8: Final Restart ==========
-    log("--- STEP 8: Final Restart ---");
+    // ========== STEP 7: Final Restart ==========
+    log("--- STEP 7: Final Restart ---");
     await runCmd("sudo systemctl restart nginx");
 
-    // ========== STEP 9: Firewall (if UFW active) ==========
-    log("--- STEP 9: Firewall ---");
+    // ========== STEP 8: Firewall ==========
+    log("--- STEP 8: Firewall ---");
     try {
       const ufwStatus = await runCmd("sudo ufw status");
       if (ufwStatus.includes("Status: active")) {
@@ -186,7 +255,7 @@ const setupNginxAndSSL = async () => {
         log("ℹ️  UFW is not active, skipping");
       }
     } catch {
-      log("ℹ️  UFW not available, skipping firewall config");
+      log("ℹ️  UFW not available (Amazon Linux uses Security Groups), skipping");
     }
 
     log("========================================");
