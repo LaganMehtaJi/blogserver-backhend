@@ -10,6 +10,7 @@ import setupNginxAndSSL, { getSetupLog } from "./setup-server.js";
 // Routes
 import productRoutes from "./routes/Product.routes.js";
 import postRoutes from "./routes/Post.routes.js";
+import { generateSitemap } from "./controllers/sitemap.controller.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +49,9 @@ app.use("/api/posts", postRoutes);
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", message: "Server is running [v3 - Nginx Setup]" });
 });
+
+// 🗺️ Sitemap (for SEO — search engines crawl this)
+app.get("/sitemap.xml", generateSitemap);
 
 // Check Nginx Setup Status (view logs)
 app.get("/api/setup-status", (req, res) => {

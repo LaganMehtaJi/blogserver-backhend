@@ -59,6 +59,33 @@ const postSchema = new mongoose.Schema(
         required: true,
       },
     },
+    // ============================
+    // 🔍 SEO Meta Fields
+    // ============================
+    metaTitle: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    metaDescription: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    metaTags: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        content: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

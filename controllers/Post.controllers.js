@@ -54,7 +54,10 @@ export const addPost = async (req, res) => {
       featured,
       date,
       outerImageUrl,
-      innerImageUrl
+      innerImageUrl,
+      metaTitle,
+      metaDescription,
+      metaTags
     } = req.body;
 
     // Basic validation
@@ -83,6 +86,12 @@ export const addPost = async (req, res) => {
       }
     }
 
+    // Parse metaTags — can be JSON string (FormData) or array
+    let parsedMetaTags = [];
+    if (metaTags) {
+      parsedMetaTags = typeof metaTags === 'string' ? JSON.parse(metaTags) : metaTags;
+    }
+
     const newPost = new Post({
       title,
       slug,
@@ -94,6 +103,9 @@ export const addPost = async (req, res) => {
       date: date || new Date(),
       outerImage,
       innerImage,
+      metaTitle: metaTitle || "",
+      metaDescription: metaDescription || "",
+      metaTags: parsedMetaTags,
     });
 
     await newPost.save();
@@ -200,13 +212,22 @@ export const updatePost = async (req, res) => {
       updatedSlug = await makeUniqueSlug(generateSlug(req.body.title), post._id);
     }
 
+    // Parse metaTags if provided
+    let parsedMetaTags = undefined;
+    if (req.body.metaTags) {
+      parsedMetaTags = typeof req.body.metaTags === 'string' ? JSON.parse(req.body.metaTags) : req.body.metaTags;
+    }
+
     const updatedData = {
       ...req.body,
       slug: updatedSlug,
       tags: req.body.tags ? (typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags) : undefined,
       featured: req.body.featured !== undefined ? (req.body.featured === 'true' || req.body.featured === true) : undefined,
       outerImage: updatedOuterImage,
-      innerImage: updatedInnerImage
+      innerImage: updatedInnerImage,
+      ...(req.body.metaTitle !== undefined && { metaTitle: req.body.metaTitle }),
+      ...(req.body.metaDescription !== undefined && { metaDescription: req.body.metaDescription }),
+      ...(parsedMetaTags !== undefined && { metaTags: parsedMetaTags }),
     };
 
     const updatedPost = await Post.findByIdAndUpdate(
