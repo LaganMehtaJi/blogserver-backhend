@@ -4,9 +4,10 @@ import {
   addPost,
   getAllPosts,
   getPostById,
-  getPostByTitle,
+  getPostBySlug,
   updatePost,
   deletePost,
+  generateSlugsForAll,
 } from "../controllers/Post.controllers.js";
 
 const router = express.Router();
@@ -17,11 +18,14 @@ router.post("/add", upload.fields([{ name: 'outerImage', maxCount: 1 }, { name: 
 // Get All Posts
 router.get("/", getAllPosts);
 
+// Generate slugs for all existing posts (one-time migration)
+router.get("/generate-slugs", generateSlugsForAll);
+
+// Get Single Post by Slug (must be before /:id)
+router.get("/slug/:slug", getPostBySlug);
+
 // Get Single Post by ID
 router.get("/:id", getPostById);
-
-// Get Single Post by Title
-router.get("/title/:title", getPostByTitle);
 
 // Update Post
 router.put("/update/:id", upload.fields([{ name: 'outerImage', maxCount: 1 }, { name: 'innerImage', maxCount: 1 }]), updatePost);
