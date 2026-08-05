@@ -278,11 +278,19 @@ export const deletePost = async (req, res) => {
 // =======================================
 export const generateSlugsForAll = async (req, res) => {
   try {
-    const posts = await Post.find({ $or: [{ slug: null }, { slug: "" }, { slug: { $exists: false } }] });
+    const { force } = req.query;
+    let query = { $or: [{ slug: null }, { slug: "" }, { slug: { $exists: false } }] };
+    
+    if (force === 'true') {
+      query = {}; // Fetch all posts to force regenerate URLs
+    }
+
+    const posts = await Post.find(query);
     let updated = 0;
 
     for (const post of posts) {
-      const slug = await makeUniqueSlug(generateSlug(post.title));
+      // Exclude current post ID when generating to avoid self-collision if already unique
+      const slug = await makeUniqueSlug(generateSlug(post.title), post._id);
       post.slug = slug;
       await post.save();
       updated++;
