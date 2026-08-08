@@ -57,6 +57,7 @@ export const addPost = async (req, res) => {
       innerImageUrl,
       metaTitle,
       metaDescription,
+      keywords,
       metaTags
     } = req.body;
 
@@ -105,6 +106,7 @@ export const addPost = async (req, res) => {
       innerImage,
       metaTitle: metaTitle || "",
       metaDescription: metaDescription || "",
+      keywords: keywords || "",
       metaTags: parsedMetaTags,
     });
 
@@ -227,6 +229,7 @@ export const updatePost = async (req, res) => {
       innerImage: updatedInnerImage,
       ...(req.body.metaTitle !== undefined && { metaTitle: req.body.metaTitle }),
       ...(req.body.metaDescription !== undefined && { metaDescription: req.body.metaDescription }),
+      ...(req.body.keywords !== undefined && { keywords: req.body.keywords }),
       ...(parsedMetaTags !== undefined && { metaTags: parsedMetaTags }),
     };
 

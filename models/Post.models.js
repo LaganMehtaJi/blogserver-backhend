@@ -72,6 +72,11 @@ const postSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    keywords: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     metaTags: [
       {
         name: {
