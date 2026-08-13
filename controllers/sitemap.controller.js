@@ -26,7 +26,7 @@ export const generateSitemap = async (req, res) => {
     for (const post of posts) {
       const lastmod = (post.updatedAt || post.date).toISOString().split("T")[0];
       xml += `  <url>\n`;
-      xml += `    <loc>${siteUrl}/blog/${post.slug}</loc>\n`;
+      xml += `    <loc>${siteUrl}/blog-detail?title=${post.slug}</loc>\n`;
       xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += `    <changefreq>weekly</changefreq>\n`;
       xml += `    <priority>0.8</priority>\n`;

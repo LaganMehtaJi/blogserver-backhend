@@ -10,6 +10,7 @@ import setupNginxAndSSL, { getSetupLog } from "./setup-server.js";
 // Routes
 import productRoutes from "./routes/Product.routes.js";
 import postRoutes from "./routes/Post.routes.js";
+import settingsRoutes from "./routes/Settings.routes.js";
 import { generateSitemap } from "./controllers/sitemap.controller.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +45,7 @@ app.use(express.static(path.join(__dirname, "../Frontend")));
 
 app.use("/api/products", productRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // Health Check
 app.get("/api/health", (req, res) => {
