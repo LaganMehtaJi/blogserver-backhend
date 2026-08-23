@@ -1,5 +1,21 @@
 import Post from "../models/Post.models.js";
 import cloudinary from "../utils/cloudinary.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const logError = (context, error) => {
+  const logPath = path.join(__dirname, "../server-error.log");
+  const logMessage = `[${new Date().toISOString()}] ERROR in ${context}: ${error.stack || error.message || error}\n`;
+  try {
+    fs.appendFileSync(logPath, logMessage);
+  } catch (err) {
+    console.error("Failed to write to log file:", err);
+  }
+};
+
 
 // =======================================
 // 🔧 Generate Slug from Title

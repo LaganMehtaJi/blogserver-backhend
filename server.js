@@ -61,6 +61,27 @@ app.get("/api/setup-status", (req, res) => {
   res.type("text/plain").send(log);
 });
 
+// View backend error logs
+app.get("/api/logs", (req, res) => {
+  const logPath = path.join(__dirname, "server-error.log");
+  if (fs.existsSync(logPath)) {
+    res.type("text/plain").send(fs.readFileSync(logPath, "utf8"));
+  } else {
+    res.type("text/plain").send("No error logs found.");
+  }
+});
+
+// Clear logs
+app.get("/api/logs/clear", (req, res) => {
+  const logPath = path.join(__dirname, "server-error.log");
+  try {
+    fs.writeFileSync(logPath, "");
+    res.send("Logs cleared.");
+  } catch (err) {
+    res.status(500).send("Failed to clear logs: " + err.message);
+  }
+});
+
 // Manually Trigger Nginx Setup
 app.get("/api/run-setup", async (req, res) => {
   res.type("text/plain").send("Setup triggered! Check /api/setup-status for progress.");

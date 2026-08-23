@@ -6,7 +6,9 @@ function ConnectDB(){
     return;
   }
 
-  mongoose.connect(mongoUrl).then((res)=>{
+  mongoose.connect(mongoUrl, {
+    serverSelectionTimeoutMS: 5000 // 5 seconds timeout
+  }).then((res)=>{
     console.log('✅ MongoDB Connected Successfully');
   }).catch((error)=>{
     console.error('❌ MongoDB Connection Failed:', error.message);
