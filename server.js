@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import setupNginxAndSSL, { getSetupLog } from "./setup-server.js";
 
@@ -33,8 +34,8 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(morgan("dev"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Serve static files from the "Frontend" directory
 app.use(express.static(path.join(__dirname, "../Frontend")));
@@ -98,6 +99,25 @@ app.get("/", (req, res) => {
 
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "../Frontend/admin.html"));
+});
+
+// ============================
+// Global Error Handler Middleware
+// ============================
+app.use((err, req, res, next) => {
+  const status = err.status || (err.name === 'MulterError' ? 400 : 500);
+  const logPath = path.join(__dirname, "server-error.log");
+  const logMessage = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} (${status}): ${err.stack || err.message}\n`;
+  try {
+    fs.appendFileSync(logPath, logMessage);
+  } catch (logErr) {
+    console.error("Failed to write to log file:", logErr);
+  }
+  console.error("Server Error:", err);
+  res.status(status).json({
+    message: err.message || "Internal Server Error",
+    error: err.name || "Error"
+  });
 });
 
 // ============================

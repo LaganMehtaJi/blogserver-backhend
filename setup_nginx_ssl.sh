@@ -14,6 +14,7 @@ cat << 'EOF' | sudo tee /etc/nginx/sites-available/api
 server {
     listen 80;
     server_name api.ayuranature.com;
+    client_max_body_size 50M;
 
     location / {
         proxy_pass http://127.0.0.1:3000;

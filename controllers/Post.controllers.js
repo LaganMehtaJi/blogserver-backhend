@@ -57,6 +57,7 @@ const makeUniqueSlug = async (slug, excludeId = null) => {
 };
 
 // =======================================
+// =======================================
 // ➕ Add Post
 // =======================================
 export const addPost = async (req, res) => {
@@ -79,26 +80,32 @@ export const addPost = async (req, res) => {
 
     // Basic validation
     if (!title || !excerpt || !fullContent || !category) {
-      return res.status(400).json({ message: "Required fields are missing" });
+      return res.status(400).json({ message: "Required fields are missing: Title, Excerpt, Content, and Category" });
     }
 
     // Auto-generate slug from title
     const slug = await makeUniqueSlug(generateSlug(title));
 
-    let outerImage = { id: "", url: outerImageUrl || "https://picsum.photos/id/134/800/600" };
-    let innerImage = { id: "", url: innerImageUrl || "https://picsum.photos/id/134/800/600" };
+    let outerImage = {
+      id: "",
+      url: (outerImageUrl && outerImageUrl.trim()) || "https://picsum.photos/id/134/800/600"
+    };
+    let innerImage = {
+      id: "",
+      url: (innerImageUrl && innerImageUrl.trim()) || "https://picsum.photos/id/134/800/600"
+    };
 
     if (req.files) {
-      if (req.files.outerImage) {
+      if (req.files.outerImage && req.files.outerImage.length > 0) {
         outerImage = {
-          id: req.files.outerImage[0].filename,
-          url: req.files.outerImage[0].path,
+          id: req.files.outerImage[0].filename || "",
+          url: req.files.outerImage[0].path || "",
         };
       }
-      if (req.files.innerImage) {
+      if (req.files.innerImage && req.files.innerImage.length > 0) {
         innerImage = {
-          id: req.files.innerImage[0].filename,
-          url: req.files.innerImage[0].path,
+          id: req.files.innerImage[0].filename || "",
+          url: req.files.innerImage[0].path || "",
         };
       }
     }
@@ -106,18 +113,31 @@ export const addPost = async (req, res) => {
     // Parse metaTags — can be JSON string (FormData) or array
     let parsedMetaTags = [];
     if (metaTags) {
-      parsedMetaTags = typeof metaTags === 'string' ? JSON.parse(metaTags) : metaTags;
+      try {
+        parsedMetaTags = typeof metaTags === 'string' ? JSON.parse(metaTags) : metaTags;
+      } catch (e) {
+        parsedMetaTags = [];
+      }
+    }
+
+    let parsedTags = [];
+    if (tags) {
+      try {
+        parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+      } catch (e) {
+        parsedTags = typeof tags === 'string' ? tags.split(',').map(s => s.trim()).filter(Boolean) : [];
+      }
     }
 
     const newPost = new Post({
-      title,
+      title: title.trim(),
       slug,
-      excerpt,
+      excerpt: excerpt.trim(),
       fullContent,
-      category,
-      tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
+      category: category.trim(),
+      tags: parsedTags,
       featured: featured === 'true' || featured === true,
-      date: date || new Date(),
+      date: date ? new Date(date) : new Date(),
       outerImage,
       innerImage,
       metaTitle: metaTitle || "",
@@ -133,8 +153,9 @@ export const addPost = async (req, res) => {
       post: newPost,
     });
   } catch (error) {
+    logError("addPost", error);
     console.error("Error adding post:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.status(500).json({ message: "Server Error while adding post", error: error.message });
   }
 };
 
@@ -146,6 +167,7 @@ export const getAllPosts = async (req, res) => {
     const posts = await Post.find().sort({ date: -1 });
     res.status(200).json(posts);
   } catch (error) {
+    logError("getAllPosts", error);
     console.error("Error fetching posts:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -163,6 +185,7 @@ export const getPostById = async (req, res) => {
     }
     res.status(200).json(post);
   } catch (error) {
+    logError("getPostById", error);
     console.error("Error fetching post:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -181,6 +204,7 @@ export const getPostBySlug = async (req, res) => {
     }
     res.status(200).json(post);
   } catch (error) {
+    logError("getPostBySlug", error);
     console.error("Error fetching post by slug:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -197,50 +221,88 @@ export const updatePost = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    let updatedOuterImage = post.outerImage;
-    let updatedInnerImage = post.innerImage;
+    let updatedOuterImage = post.outerImage || { id: "", url: "" };
+    let updatedInnerImage = post.innerImage || { id: "", url: "" };
 
-    if (req.files) {
-      if (req.files.outerImage) {
-        if (post.outerImage && post.outerImage.id) {
+    const hasNewOuterFile = req.files && req.files.outerImage && req.files.outerImage.length > 0;
+    const hasNewInnerFile = req.files && req.files.innerImage && req.files.innerImage.length > 0;
+
+    if (hasNewOuterFile) {
+      if (post.outerImage && post.outerImage.id) {
+        try {
           await cloudinary.uploader.destroy(post.outerImage.id);
+        } catch (delErr) {
+          console.warn("Could not destroy old outer image in Cloudinary:", delErr.message);
         }
-        updatedOuterImage = {
-          id: req.files.outerImage[0].filename,
-          url: req.files.outerImage[0].path,
-        };
       }
-      if (req.files.innerImage) {
-        if (post.innerImage && post.innerImage.id) {
-          await cloudinary.uploader.destroy(post.innerImage.id);
-        }
-        updatedInnerImage = {
-          id: req.files.innerImage[0].filename,
-          url: req.files.innerImage[0].path,
-        };
-      }
+      updatedOuterImage = {
+        id: req.files.outerImage[0].filename || "",
+        url: req.files.outerImage[0].path || "",
+      };
+    } else if (req.body.outerImageUrl !== undefined && req.body.outerImageUrl.trim()) {
+      const trimmedUrl = req.body.outerImageUrl.trim();
+      const isSameUrl = post.outerImage && post.outerImage.url === trimmedUrl;
+      updatedOuterImage = {
+        id: isSameUrl ? (post.outerImage.id || "") : "",
+        url: trimmedUrl
+      };
     }
 
-    if (req.body.outerImageUrl) updatedOuterImage = { id: "", url: req.body.outerImageUrl };
-    if (req.body.innerImageUrl) updatedInnerImage = { id: "", url: req.body.innerImageUrl };
+    if (hasNewInnerFile) {
+      if (post.innerImage && post.innerImage.id) {
+        try {
+          await cloudinary.uploader.destroy(post.innerImage.id);
+        } catch (delErr) {
+          console.warn("Could not destroy old inner image in Cloudinary:", delErr.message);
+        }
+      }
+      updatedInnerImage = {
+        id: req.files.innerImage[0].filename || "",
+        url: req.files.innerImage[0].path || "",
+      };
+    } else if (req.body.innerImageUrl !== undefined && req.body.innerImageUrl.trim()) {
+      const trimmedUrl = req.body.innerImageUrl.trim();
+      const isSameUrl = post.innerImage && post.innerImage.url === trimmedUrl;
+      updatedInnerImage = {
+        id: isSameUrl ? (post.innerImage.id || "") : "",
+        url: trimmedUrl
+      };
+    }
 
     // Regenerate slug if title changed
     let updatedSlug = post.slug;
-    if (req.body.title && req.body.title !== post.title) {
+    if (req.body.title && req.body.title.trim() !== post.title) {
       updatedSlug = await makeUniqueSlug(generateSlug(req.body.title), post._id);
     }
 
     // Parse metaTags if provided
     let parsedMetaTags = undefined;
-    if (req.body.metaTags) {
-      parsedMetaTags = typeof req.body.metaTags === 'string' ? JSON.parse(req.body.metaTags) : req.body.metaTags;
+    if (req.body.metaTags !== undefined) {
+      try {
+        parsedMetaTags = typeof req.body.metaTags === 'string' ? JSON.parse(req.body.metaTags) : req.body.metaTags;
+      } catch (e) {
+        parsedMetaTags = [];
+      }
+    }
+
+    let parsedTags = undefined;
+    if (req.body.tags !== undefined) {
+      try {
+        parsedTags = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags;
+      } catch (e) {
+        parsedTags = typeof req.body.tags === 'string' ? req.body.tags.split(',').map(s => s.trim()).filter(Boolean) : [];
+      }
     }
 
     const updatedData = {
-      ...req.body,
+      ...(req.body.title !== undefined && { title: req.body.title.trim() }),
+      ...(req.body.excerpt !== undefined && { excerpt: req.body.excerpt.trim() }),
+      ...(req.body.fullContent !== undefined && { fullContent: req.body.fullContent }),
+      ...(req.body.category !== undefined && { category: req.body.category.trim() }),
+      ...(parsedTags !== undefined && { tags: parsedTags }),
+      ...(req.body.featured !== undefined && { featured: req.body.featured === 'true' || req.body.featured === true }),
+      ...(req.body.date !== undefined && { date: new Date(req.body.date) }),
       slug: updatedSlug,
-      tags: req.body.tags ? (typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags) : undefined,
-      featured: req.body.featured !== undefined ? (req.body.featured === 'true' || req.body.featured === true) : undefined,
       outerImage: updatedOuterImage,
       innerImage: updatedInnerImage,
       ...(req.body.metaTitle !== undefined && { metaTitle: req.body.metaTitle }),
@@ -260,8 +322,9 @@ export const updatePost = async (req, res) => {
       post: updatedPost,
     });
   } catch (error) {
+    logError("updatePost", error);
     console.error("Error updating post:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.status(500).json({ message: "Server Error while updating post", error: error.message });
   }
 };
 
@@ -276,19 +339,28 @@ export const deletePost = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    // Delete images from Cloudinary
+    // Delete images from Cloudinary safely
     if (post.outerImage && post.outerImage.id) {
-      await cloudinary.uploader.destroy(post.outerImage.id);
+      try {
+        await cloudinary.uploader.destroy(post.outerImage.id);
+      } catch (delErr) {
+        console.warn("Could not delete outer image from Cloudinary:", delErr.message);
+      }
     }
     if (post.innerImage && post.innerImage.id) {
-      await cloudinary.uploader.destroy(post.innerImage.id);
+      try {
+        await cloudinary.uploader.destroy(post.innerImage.id);
+      } catch (delErr) {
+        console.warn("Could not delete inner image from Cloudinary:", delErr.message);
+      }
     }
 
     await Post.findByIdAndDelete(id);
     res.status(200).json({ message: "Post deleted successfully ✅" });
   } catch (error) {
+    logError("deletePost", error);
     console.error("Error deleting post:", error);
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.status(500).json({ message: "Server Error while deleting post", error: error.message });
   }
 };
 

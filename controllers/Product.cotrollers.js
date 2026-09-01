@@ -36,16 +36,10 @@ export const addProduct = async (req, res) => {
       return res.status(400).json({ message: "SKU already exists" });
     }
 
-    // Upload images to Cloudinary
-    const imageUploads = await Promise.all(
-      req.files.map((file) =>
-        cloudinary.uploader.upload(file.path, { folder: "products" })
-      )
-    );
-
-    const images = imageUploads.map((img) => ({
-      id: img.public_id,
-      url: img.secure_url,
+    // Images already uploaded to Cloudinary via multer-storage-cloudinary
+    const images = req.files.map((file) => ({
+      id: file.filename || "",
+      url: file.path || "",
       alt: name,
     }));
 
@@ -58,8 +52,8 @@ export const addProduct = async (req, res) => {
       price,
       discountPrice,
       stock,
-      specifications: specifications ? JSON.parse(specifications) : {},
-      tags: tags ? JSON.parse(tags) : [],
+      specifications: specifications ? (typeof specifications === 'string' ? JSON.parse(specifications) : specifications) : {},
+      tags: tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [],
       isFeatured,
       images,
     });
@@ -105,7 +99,7 @@ export const getProductById = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.status(200).json({ product });
+    res.status(200).json(product);
   } catch (error) {
     console.error("Error fetching product:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
@@ -129,20 +123,22 @@ export const updateProduct = async (req, res) => {
 
     // If new images uploaded
     if (req.files && req.files.length > 0) {
-      // Delete old images from Cloudinary
-      for (let img of product.images) {
-        await cloudinary.uploader.destroy(img.id);
+      // Delete old images from Cloudinary safely
+      if (product.images && product.images.length > 0) {
+        for (let img of product.images) {
+          if (img.id) {
+            try {
+              await cloudinary.uploader.destroy(img.id);
+            } catch (delErr) {
+              console.warn("Could not delete product image from Cloudinary:", delErr.message);
+            }
+          }
+        }
       }
 
-      const imageUploads = await Promise.all(
-        req.files.map((file) =>
-          cloudinary.uploader.upload(file.path, { folder: "products" })
-        )
-      );
-
-      updatedImages = imageUploads.map((img) => ({
-        id: img.public_id,
-        url: img.secure_url,
+      updatedImages = req.files.map((file) => ({
+        id: file.filename || "",
+        url: file.path || "",
         alt: req.body.name || product.name,
       }));
     }
@@ -152,9 +148,9 @@ export const updateProduct = async (req, res) => {
       {
         ...req.body,
         specifications: req.body.specifications
-          ? JSON.parse(req.body.specifications)
+          ? (typeof req.body.specifications === 'string' ? JSON.parse(req.body.specifications) : req.body.specifications)
           : undefined,
-        tags: req.body.tags ? JSON.parse(req.body.tags) : undefined,
+        tags: req.body.tags ? (typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags) : undefined,
         ...(updatedImages && { images: updatedImages }),
       },
       { new: true, runValidators: true }
@@ -183,9 +179,17 @@ export const deleteProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Delete images from Cloudinary
-    for (let img of product.images) {
-      await cloudinary.uploader.destroy(img.id);
+    // Delete images from Cloudinary safely
+    if (product.images && product.images.length > 0) {
+      for (let img of product.images) {
+        if (img.id) {
+          try {
+            await cloudinary.uploader.destroy(img.id);
+          } catch (delErr) {
+            console.warn("Could not delete product image from Cloudinary:", delErr.message);
+          }
+        }
+      }
     }
 
     await Product.findByIdAndDelete(id);
