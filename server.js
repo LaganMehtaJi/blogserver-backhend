@@ -12,7 +12,7 @@ import setupNginxAndSSL, { getSetupLog } from "./setup-server.js";
 import productRoutes from "./routes/Product.routes.js";
 import postRoutes from "./routes/Post.routes.js";
 import settingsRoutes from "./routes/Settings.routes.js";
-import { generateSitemap } from "./controllers/sitemap.controller.js";
+import { generateSitemap, syncSitemapApi, syncSitemapFile } from "./controllers/sitemap.controller.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +37,12 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+// 🗺️ Sitemap Routes (served dynamically directly from DB)
+app.get("/sitemap.xml", generateSitemap);
+app.get("/api/sitemap.xml", generateSitemap);
+app.get("/api/sitemap/sync", syncSitemapApi);
+app.post("/api/sitemap/sync", syncSitemapApi);
+
 // Serve static files from the "Frontend" directory
 app.use(express.static(path.join(__dirname, "../Frontend")));
 
@@ -52,9 +58,6 @@ app.use("/api/settings", settingsRoutes);
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", message: "Server is running [v3 - Nginx Setup]" });
 });
-
-// 🗺️ Sitemap (for SEO — search engines crawl this)
-app.get("/sitemap.xml", generateSitemap);
 
 // Check Nginx Setup Status (view logs)
 app.get("/api/setup-status", (req, res) => {
@@ -133,5 +136,7 @@ app.listen(process.env.PORT || 8080, (error) => {
     console.log(`Server running on port ${process.env.PORT || 8080} 🚀`);
     // Auto-setup Nginx + SSL (only runs on Linux/AWS, skips on Windows)
     setupNginxAndSSL();
+    // Auto-sync sitemap on startup
+    syncSitemapFile().catch((err) => console.error("Initial sitemap sync error:", err.message));
   }
 });

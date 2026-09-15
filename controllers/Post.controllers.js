@@ -3,6 +3,7 @@ import cloudinary from "../utils/cloudinary.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { syncSitemapFile } from "./sitemap.controller.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -148,6 +149,9 @@ export const addPost = async (req, res) => {
 
     await newPost.save();
 
+    // Auto-update sitemap with newly added blog
+    syncSitemapFile().catch((err) => console.error("Auto sitemap sync on addPost error:", err));
+
     res.status(201).json({
       message: "Post added successfully ✅",
       post: newPost,
@@ -165,6 +169,10 @@ export const addPost = async (req, res) => {
 export const getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find().sort({ date: -1 });
+
+    // Sync sitemap dynamically whenever all posts are fetched
+    syncSitemapFile(posts).catch((err) => console.error("Auto sitemap sync on getAllPosts error:", err));
+
     res.status(200).json(posts);
   } catch (error) {
     logError("getAllPosts", error);
@@ -317,6 +325,9 @@ export const updatePost = async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // Auto-update sitemap when post is updated
+    syncSitemapFile().catch((err) => console.error("Auto sitemap sync on updatePost error:", err));
+
     res.status(200).json({
       message: "Post updated successfully ✅",
       post: updatedPost,
@@ -356,6 +367,10 @@ export const deletePost = async (req, res) => {
     }
 
     await Post.findByIdAndDelete(id);
+
+    // Auto-update sitemap when post is deleted
+    syncSitemapFile().catch((err) => console.error("Auto sitemap sync on deletePost error:", err));
+
     res.status(200).json({ message: "Post deleted successfully ✅" });
   } catch (error) {
     logError("deletePost", error);
