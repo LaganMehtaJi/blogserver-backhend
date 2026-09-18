@@ -19,7 +19,11 @@ export const getSitemapFilePath = () => {
     if (fs.existsSync(p)) return p;
     if (fs.existsSync(path.dirname(p))) return p;
   }
-  return SITEMAP_FILE_PATHS[0];
+  const publicDir = path.join(__dirname, "../public");
+  try {
+    if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+  } catch {}
+  return path.join(publicDir, "sitemap.xml");
 };
 
 // Helper: Escape XML special characters
@@ -112,6 +116,10 @@ export const syncSitemapFile = async (providedPosts = null) => {
     const filePath = getSitemapFilePath();
 
     if (filePath) {
+      const parentDir = path.dirname(filePath);
+      if (!fs.existsSync(parentDir)) {
+        try { fs.mkdirSync(parentDir, { recursive: true }); } catch {}
+      }
       fs.writeFileSync(filePath, xml, "utf8");
       console.log(`✅ sitemap.xml synced successfully (${posts.length} posts) at ${filePath}`);
       return { success: true, count: posts.length, path: filePath };
